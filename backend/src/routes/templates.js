@@ -96,3 +96,73 @@ router.post('/delete', authMiddleware, async (req, res) => {
 });
 
 module.exports = router;
+
+// POST /api/templates/sync
+router.post('/sync', authMiddleware, async (req, res) => {
+  try {
+    const [rows] = await pool.execute('SELECT setting_key, setting_value FROM settings');
+    const settings = {};
+    rows.forEach(r => settings[r.setting_key] = r.setting_value);
+
+    const token = settings.whatsapp_api_token || '';
+    const wabaId = settings.whatsapp_business_account_id || '';
+    const version = settings.whatsapp_api_version || 'v23.0';
+
+    if (!token) return sendJsonResponse(res, false, 'Add your WhatsApp API token in Settings first.');
+    if (!wabaId) return sendJsonResponse(res, false, 'Add your WhatsApp Business Account ID in Settings first.');
+
+    const url = `https://graph.facebook.com/${version}/${wabaId}/message_templates?limit=100&fields=name,status,language,category,components`;
+    
+    // dynamically import fetch for node 20
+    const fetch = globalThis.fetch; 
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    const data = await response.json();
+
+    if (!response.ok) {
+      let detail = JSON.stringify(data);
+      if (response.status === 404 || detail.includes('does not exist')) {
+        detail = 'That WhatsApp Business Account ID was not found, or this token cannot read it.';
+      } else if (response.status === 401 || detail.includes('access token')) {
+        detail = 'The access token is invalid or expired.';
+      }
+      return sendJsonResponse(res, false, 'Could not read templates from Meta: ' + detail, {}, 500);
+    }
+
+    const templates = [];
+    for (const row of (data.data || [])) {
+      let body = '';
+      for (const comp of (row.components || [])) {
+        if (comp.type === 'BODY') {
+          body = comp.text || '';
+          break;
+        }
+      }
+
+      let variableCount = 0;
+      const matches = body.match(/\{\{(\d+)\}\}/g);
+      if (matches) {
+        const nums = matches.map(m => parseInt(m.replace(/[{}]/g, '')));
+        variableCount = Math.max(...nums);
+      }
+
+      templates.push({
+        name: row.name || '',
+        language: row.language || '',
+        status: row.status || '',
+        category: row.category || '',
+        body: body,
+        variable_count: variableCount
+      });
+    }
+
+    const approved = templates.filter(t => (t.status || '').toUpperCase() === 'APPROVED');
+
+    return sendJsonResponse(res, true, `${templates.length} template(s) found at Meta, ${approved.length} approved.`, { templates });
+  } catch (error) {
+    console.error('Template sync error:', error);
+    return sendJsonResponse(res, false, 'Internal server error', {}, 500);
+  }
+});
