@@ -20,14 +20,6 @@ services:
       - db_data:/var/lib/mysql
       # Run schema on first boot
       - ./database:/docker-entrypoint-initdb.d:ro
-      - ./migration-login-attempts.sql:/docker-entrypoint-initdb.d/02-login-attempts.sql:ro
-      - ./migration-staff.sql:/docker-entrypoint-initdb.d/03-staff.sql:ro
-      - ./migration-campaign-batching.sql:/docker-entrypoint-initdb.d/04-campaign-batching.sql:ro
-      - ./migration-camp-register.sql:/docker-entrypoint-initdb.d/05-camp-register.sql:ro
-      - ./migration-camp-finance.sql:/docker-entrypoint-initdb.d/06-camp-finance.sql:ro
-      - ./migration-schema-ledger.sql:/docker-entrypoint-initdb.d/07-schema-ledger.sql:ro
-      - ./migration-sinhala-templates.sql:/docker-entrypoint-initdb.d/08-sinhala-templates.sql:ro
-      - ./migration-whatsapp-templates.sql:/docker-entrypoint-initdb.d/09-whatsapp-templates.sql:ro
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
