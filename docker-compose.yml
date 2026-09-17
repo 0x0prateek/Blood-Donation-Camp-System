@@ -19,7 +19,7 @@ services:
     volumes:
       - db_data:/var/lib/mysql
       # Run schema on first boot
-      - ./database.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database:/docker-entrypoint-initdb.d:ro
       - ./migration-login-attempts.sql:/docker-entrypoint-initdb.d/02-login-attempts.sql:ro
       - ./migration-staff.sql:/docker-entrypoint-initdb.d/03-staff.sql:ro
       - ./migration-campaign-batching.sql:/docker-entrypoint-initdb.d/04-campaign-batching.sql:ro

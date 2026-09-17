@@ -1,6 +1,6 @@
 # Blood Donor Management System
 
-A full-stack Blood Donor Management System for blood donation organizations — manage donors, blood camps, finances, messaging (WhatsApp + SMS), and reports.
+A full-stack Blood Donor Management System (Demo Learning Project for Students) for blood donation organizations — manage donors, blood camps, finances, messaging (WhatsApp + SMS), and reports.
 
 **Stack:** Vue 3 SPA + Node.js (Express) REST API + MySQL — fully containerised (Docker/Podman OCI), deployable to Railway.app.
 
@@ -55,7 +55,9 @@ Blood-Donation-Camp-System/
 ├── docker-compose.prod.yml
 ├── .env.example
 ├── railway.json
-└── database.sql      ← Full schema + seed data
+├── database/          ← SQL initialization scripts
+│   ├── 01-setup.sql
+│   └── 02-dummy-data.sql
 ```
 
 ---
