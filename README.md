@@ -2,17 +2,17 @@
 
 A full-stack Blood Donor Management System for blood donation organizations — manage donors, blood camps, finances, messaging (WhatsApp + SMS), and reports.
 
-**Stack:** Vue 3 SPA + PHP 8.2 REST API + MySQL — fully containerised (Docker/Podman OCI), deployable to Railway.app.
+**Stack:** Vue 3 SPA + Node.js (Express) REST API + MySQL — fully containerised (Docker/Podman OCI), deployable to Railway.app.
 
 ---
 
 ## 🛠 Technology Stack
 
 ### Backend
-- PHP 8.2 + Slim Framework 4 (REST API)
-- PDO (MySQL/MariaDB)
-- JWT authentication (httpOnly cookies)
-- PhpSpreadsheet (Excel import/export)
+- Node.js 20 + Express (REST API)
+- `mysql2` (MySQL/MariaDB promises)
+- JWT authentication (httpOnly cookies) & `bcrypt`
+- `exceljs` (Excel import/export)
 - WhatsApp Cloud API (Meta) + Notify.lk / Twilio (SMS)
 
 ### Frontend
@@ -33,12 +33,15 @@ A full-stack Blood Donor Management System for blood donation organizations — 
 
 ```
 Blood-Donation-Camp-System/
-├── backend/          ← PHP Slim 4 REST API
-│   ├── public/       ← Document root
-│   ├── src/          ← Controllers, Middleware, Services
-│   ├── config/
-│   ├── Dockerfile
-│   └── nginx.conf
+├── backend/          ← Node.js Express API
+│   ├── src/
+│   │   ├── controllers/
+│   │   ├── middleware/
+│   │   ├── routes/
+│   │   ├── utils/
+│   │   └── index.js
+│   ├── package.json
+│   └── Dockerfile
 ├── frontend/         ← Vue 3 SPA
 │   ├── src/
 │   │   ├── views/    ← One per page
@@ -107,8 +110,23 @@ UPDATE admins SET password = '<hash>' WHERE email = 'admin@admin.com';
 
 Generate the hash:
 ```bash
-docker compose exec backend php -r "echo password_hash(trim(fgets(STDIN)), PASSWORD_DEFAULT), PHP_EOL;"
-# Type your password and press Enter
+docker compose exec backend node -e "require('bcrypt').hash('your_password', 10).then(console.log)"
+```
+
+Alternatively, to run the apps locally without containers (make sure your `.env` connects to a running MySQL instance):
+
+**Start the Backend:**
+```bash
+cd backend
+npm install
+npm start
+```
+
+**Start the Frontend:**
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 
 ---
@@ -220,7 +238,7 @@ See the source for the full route list.
 - Login rate limiting (5 failures per 15 minutes per email, 20 per IP)
 - CORS restricted to configured `FRONTEND_URL`
 - SQL injection prevention via PDO prepared statements
-- Excel import size-capped at 5 MB (PhpSpreadsheet memory-exhaustion mitigation)
+- Excel import size-capped at 5 MB (memory-exhaustion mitigation)
 
 ---
 
