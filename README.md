@@ -96,25 +96,9 @@ docker compose up --build
 | Service | URL |
 |---|---|
 | Frontend (Vue SPA) | http://localhost:3000 |
-| Backend API | http://localhost:3000:8080/api |
+| Backend API | http://localhost:8081/api |
 | Database | localhost:3306 |
 
-### 4. Set the admin password
-
-The database seeds a locked admin account (`admin@admin.com`). You must set a password before first login.
-
-Connect to the database and run:
-```sql
--- Replace <hash> with the output of the command below
-UPDATE admins SET password = '<hash>' WHERE email = 'admin@admin.com';
-```
-
-Generate the hash:
-```bash
-docker compose exec backend node -e "require('bcrypt').hash('your_password', 10).then(console.log)"
-```
-
-Alternatively, to run the apps locally without containers (make sure your `.env` connects to a running MySQL instance):
 
 **Start the Backend:**
 ```bash
