@@ -63,6 +63,7 @@ Blood-Donation-Camp-System/
 ## 🚀 Quick Start (Docker / Podman)
 
 ### Prerequisites
+- macOS users: Install Colima to run the Docker engine: `brew install colima && colima start`
 - Podman 4+ (with `podman-compose` or `podman compose`)
 - Or Docker 24+
 
@@ -237,7 +238,7 @@ See the source for the full route list.
 - JWT authentication with httpOnly cookies (XSS-resistant)
 - Login rate limiting (5 failures per 15 minutes per email, 20 per IP)
 - CORS restricted to configured `FRONTEND_URL`
-- SQL injection prevention via PDO prepared statements
+- SQL injection prevention via parameterized queries (`mysql2/promise`)
 - Excel import size-capped at 5 MB (memory-exhaustion mitigation)
 
 ---
