@@ -4,17 +4,23 @@ import AppLayout from '../layouts/AppLayout.vue'
 
 const routes = [
   {
+    path: '/',
+    name: 'Landing',
+    component: () => import('../views/Landing.vue'),
+    meta: { requiresAuth: false, title: 'DotLife - Connect Donors, Save Lives' }
+  },
+  {
     path: '/login',
     name: 'Login',
     component: () => import('../views/Login.vue'),
     meta: { requiresAuth: false, title: 'Login' }
   },
   {
-    path: '/',
+    path: '/admin',
     component: AppLayout,
     meta: { requiresAuth: true },
     children: [
-      { path: '', redirect: '/dashboard' },
+      { path: '', redirect: '/admin/dashboard' },
       { path: 'dashboard', name: 'Dashboard', component: () => import('../views/Dashboard.vue'), meta: { title: 'Dashboard' } },
       
       { path: 'donors', name: 'Donors', component: () => import('../views/Donors/List.vue'), meta: { title: 'Donors' } },
@@ -59,7 +65,7 @@ router.beforeEach(async (to, from, next) => {
 })
 
 router.afterEach((to) => {
-  document.title = (to.meta.title || 'Dashboard') + ' - Blood Donation Camp System'
+  document.title = (to.meta.title || 'DotLife') + ' - Blood Donation Camp System'
 })
 
 export default router
