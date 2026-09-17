@@ -9,7 +9,7 @@ const sendJsonResponse = (res, success, message = '', data = {}, httpCode = 200)
   return res.status(httpCode).json({
     success,
     message,
-    ...data
+    data
   });
 };
 
@@ -62,9 +62,9 @@ const formatPhoneForAPI = (phone) => {
   return normalized;
 };
 
-const replacePlaceholders = (template, data) => {
+const replacePlaceholders = (templatdata) => {
   let result = template;
-  for (const [key, value] of Object.entries(data)) {
+  for (const [key, value] of Object.entridata)) {
     const regex = new RegExp(`{${key}}`, 'g');
     result = result.replace(regex, value);
   }
@@ -78,7 +78,7 @@ const formatMoney = (amount, currencySymbol = 'Rs.') => {
   return `${currencySymbol} ${num.toFixed(2).replace(/\\d(?=(\\d{3})+\\.)/g, '$&,')}`;
 };
 
-const dataTablePaging = (req, maxLength = 100, defaultLength = 25) => {
+condataTablePaging = (req, maxLength = 100, defaultLength = 25) => {
   let start = Math.max(0, parseInt(req.body.start) || parseInt(req.query.start) || 0);
   let length = parseInt(req.body.length) || parseInt(req.query.length) || defaultLength;
   length = length <= 0 ? maxLength : Math.min(length, maxLength);

@@ -258,3 +258,18 @@ router.post('/import', authMiddleware, upload.single('import_file'), async (req,
 });
 
 module.exports = router;
+
+// GET /api/donors/blood-group-counts
+router.get('/blood-group-counts', authMiddleware, async (req, res) => {
+  try {
+    const [rows] = await pool.execute(`
+      SELECT blood_group, COUNT(*) as count 
+      FROM donors 
+      WHERE status = 'Active' AND blood_group IS NOT NULL AND blood_group <> ''
+      GROUP BY blood_group
+    `);
+    return sendJsonResponse(res, true, 'Blood group counts loaded', { counts: rows });
+  } catch (error) {
+    return sendJsonResponse(res, false, 'Internal server error', {}, 500);
+  }
+});

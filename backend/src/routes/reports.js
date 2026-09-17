@@ -26,11 +26,100 @@ router.get('/dashboard', authMiddleware, async (req, res) => {
   }
 });
 
+// POST /api/reports/data
+router.post('/data', authMiddleware, async (req, res) => {
+  try {
+    const startDate = req.body.start_date || '';
+    const endDate = req.body.end_date || '';
+    const bloodGroup = req.body.blood_group || '';
+    
+    let dateWhere = '';
+    let dateParams = [];
+    if (startDate) { dateWhere += ' AND DATE(d.created_at) >= ?'; dateParams.push(startDate); }
+    if (endDate) { dateWhere += ' AND DATE(d.created_at) <= ?'; dateParams.push(endDate); }
+
+    let bgWhere = '';
+    let bgParams = [];
+    if (bloodGroup && ['A+','A-','B+','B-','AB+','AB-','O+','O-'].includes(bloodGroup)) {
+      bgWhere = ' AND d.blood_group = ?';
+      bgParams.push(bloodGroup);
+    }
+
+    const [[{ total_donors }]] = await pool.execute(`SELECT COUNT(*) as total_donors FROM donors d WHERE 1=1 ${dateWhere} ${bgWhere}`, [...dateParams, ...bgParams]);
+    
+    const [[{ upcoming_camps }]] = await pool.execute("SELECT COUNT(*) as upcoming_camps FROM blood_camps WHERE camp_date >= CURDATE() AND status = 'Upcoming'");
+    
+    // Eligible Donors (4 months)
+    let eligDateWhere = dateWhere;
+    let eligDateParams = [...dateParams];
+    const [eligibleDonors] = await pool.execute(`
+      SELECT d.id, d.donor_name, d.mobile, d.blood_group, d.last_donation_date 
+      FROM donors d 
+      WHERE d.status = 'Active' AND (d.last_donation_date IS NULL OR d.last_donation_date <= DATE_SUB(NOW(), INTERVAL 4 MONTH))
+      ${eligDateWhere} ${bgWhere}
+      ORDER BY d.blood_group, d.donor_name
+    `, [...eligDateParams, ...bgParams]);
+
+    // Messages Sent
+    let msgDateWhere = '';
+    let msgDateParams = [];
+    if (startDate) { msgDateWhere += ' AND DATE(ml.sent_at) >= ?'; msgDateParams.push(startDate); }
+    if (endDate) { msgDateWhere += ' AND DATE(ml.sent_at) <= ?'; msgDateParams.push(endDate); }
+    
+    const [[{ messages_sent }]] = await pool.execute(`
+      SELECT COUNT(*) as messages_sent FROM message_logs ml LEFT JOIN donors d ON d.id = ml.donor_id
+      WHERE ml.status = 'Sent' ${msgDateWhere} ${bgWhere}
+    `, [...msgDateParams, ...bgParams]);
+
+    // Blood Groups
+    const [bloodRows] = await pool.execute(`
+      SELECT d.blood_group, COUNT(*) AS total
+      FROM donors d
+      WHERE d.status = 'Active' ${dateWhere} ${bgWhere}
+      GROUP BY d.blood_group
+    `, [...dateParams, ...bgParams]);
+
+    const bloodGroups = {};
+    ['A+','A-','B+','B-','AB+','AB-','O+','O-'].forEach(g => bloodGroups[g] = { blood_group: g, total: 0 });
+    let unknownBloodGroup = 0;
+    bloodRows.forEach(row => {
+      if (bloodGroups[row.blood_group]) bloodGroups[row.blood_group].total = parseInt(row.total);
+      else unknownBloodGroup += parseInt(row.total);
+    });
+
+    // Message Trend
+    const [messageTrend] = await pool.execute(`
+      SELECT DATE(ml.sent_at) AS report_date, COUNT(*) AS total
+      FROM message_logs ml LEFT JOIN donors d ON d.id = ml.donor_id
+      WHERE 1=1 ${msgDateWhere} ${bgWhere}
+      GROUP BY DATE(ml.sent_at) ORDER BY report_date ASC
+    `, [...msgDateParams, ...bgParams]);
+
+    // Recent Messages
+    const [recentMessages] = await pool.execute(`
+      SELECT ml.sent_at, ml.message_type, ml.status, COALESCE(d.donor_name, 'Unknown donor') AS donor_name
+      FROM message_logs ml LEFT JOIN donors d ON d.id = ml.donor_id
+      WHERE 1=1 ${msgDateWhere} ${bgWhere}
+      ORDER BY ml.sent_at DESC LIMIT 10
+    `, [...msgDateParams, ...bgParams]);
+
+    return sendJsonResponse(res, true, 'Reports loaded.', {
+      summary: { total_donors, eligible_donors: eligibleDonors.length, messages_sent, upcoming_camps, unknown_blood_group: unknownBloodGroup },
+      blood_groups: Object.values(bloodGroups),
+      message_trend: messageTrend,
+      eligible_donors: eligibleDonors.slice(0, 10),
+      recent_messages: recentMessages
+    });
+  } catch (error) {
+    return sendJsonResponse(res, false, 'Internal error', {}, 500);
+  }
+});
+
 // GET /api/reports/export
 router.get('/export', authMiddleware, async (req, res) => {
   try {
-    const startDate = req.query.start || null;
-    const endDate = req.query.end || null;
+    const startDate = req.query.start_date || null;
+    const endDate = req.query.end_date || null;
     
     let query = `
       SELECT d.donor_name, d.mobile, d.blood_group, c.title, c.camp_date 
