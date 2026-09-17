@@ -4,7 +4,6 @@ config.local.php
 
 # ── Environment files ────────────────────────────────────────
 # .env holds real credentials — git-ignored, use .env.example as template
-.env
 .env.local
 .env.*.local
 

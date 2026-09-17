@@ -1,0 +1,6 @@
+Admin Login Credentials (Demo)
+==============================
+Email: admin@admin.com
+Password: password123
+
+Note: This is a demo project, so these credentials are hardcoded for easy access.
