@@ -163,7 +163,7 @@ const fetchDonor = async () => {
   } catch (error) {
     console.error('Error fetching donor:', error)
     Swal.fire('Error', 'Failed to load donor details.', 'error')
-    router.push('/donors')
+    router.push('/admin/donors')
   } finally {
     loading.value = false
   }
@@ -176,7 +176,7 @@ const updateDonor = async () => {
     const id = route.params.id
     await api.post('/donors/save', { ...form.value, id })
     Swal.fire('Success', 'Donor updated successfully.', 'success')
-    router.push('/donors')
+    router.push('/admin/donors')
   } catch (error) {
     console.error('Error updating donor:', error)
     if (error.response && error.response.status === 422) {

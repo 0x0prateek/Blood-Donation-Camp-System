@@ -15,7 +15,7 @@
       <nav class="sidebar-nav">
         <div class="nav-section">
           <span class="nav-section-title">Main</span>
-          <router-link to="/dashboard" class="nav-link" active-class="active">
+          <router-link to="/admin/dashboard" class="nav-link" active-class="active">
             <i class="fas fa-chart-pie"></i>
             <span>Dashboard</span>
           </router-link>
@@ -23,23 +23,23 @@
 
         <div class="nav-section">
           <span class="nav-section-title">Management</span>
-          <router-link to="/donors" class="nav-link" active-class="active" :class="{ 'active': $route.path.startsWith('/donors') }">
+          <router-link to="/admin/donors" class="nav-link" active-class="active" :class="{ 'active': $route.path.startsWith('/donors') }">
             <i class="fas fa-users"></i>
             <span>Donors</span>
           </router-link>
-          <router-link to="/staff" class="nav-link" active-class="active">
+          <router-link to="/admin/staff" class="nav-link" active-class="active">
             <i class="fas fa-users-gear"></i>
             <span>Staff</span>
           </router-link>
-          <router-link to="/camps" class="nav-link" active-class="active" :class="{ 'active': $route.path === '/camps' }">
+          <router-link to="/admin/camps" class="nav-link" active-class="active" :class="{ 'active': $route.path === '/camps' }">
             <i class="fas fa-campground"></i>
             <span>Blood Camps</span>
           </router-link>
-          <router-link to="/camp-register" class="nav-link" active-class="active">
+          <router-link to="/admin/camp-register" class="nav-link" active-class="active">
             <i class="fas fa-clipboard-list"></i>
             <span>Camp Register</span>
           </router-link>
-          <router-link to="/camp-finance" class="nav-link" active-class="active">
+          <router-link to="/admin/camp-finance" class="nav-link" active-class="active">
             <i class="fas fa-hand-holding-heart"></i>
             <span>Budget &amp; Donations</span>
           </router-link>
@@ -47,15 +47,15 @@
 
         <div class="nav-section">
           <span class="nav-section-title">Communication</span>
-          <router-link to="/messages" class="nav-link" active-class="active">
+          <router-link to="/admin/messages" class="nav-link" active-class="active">
             <i class="fas fa-paper-plane"></i>
             <span>Messages</span>
           </router-link>
-          <router-link to="/templates" class="nav-link" active-class="active">
+          <router-link to="/admin/templates" class="nav-link" active-class="active">
             <i class="fas fa-file-alt"></i>
             <span>Templates</span>
           </router-link>
-          <router-link to="/emergency" class="nav-link" active-class="active">
+          <router-link to="/admin/emergency" class="nav-link" active-class="active">
             <i class="fas fa-exclamation-triangle"></i>
             <span>Emergency</span>
           </router-link>
@@ -63,7 +63,7 @@
 
         <div class="nav-section">
           <span class="nav-section-title">Analytics</span>
-          <router-link to="/reports" class="nav-link" active-class="active">
+          <router-link to="/admin/reports" class="nav-link" active-class="active">
             <i class="fas fa-chart-bar"></i>
             <span>Reports</span>
           </router-link>
@@ -71,7 +71,7 @@
 
         <div class="nav-section">
           <span class="nav-section-title">System</span>
-          <router-link to="/settings" class="nav-link" active-class="active">
+          <router-link to="/admin/settings" class="nav-link" active-class="active">
             <i class="fas fa-cog"></i>
             <span>Settings</span>
           </router-link>
