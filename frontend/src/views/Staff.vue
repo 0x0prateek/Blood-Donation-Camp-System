@@ -184,7 +184,7 @@ const fetchStaff = async (page = 1) => {
       page,
       status: filters.value.status
     }
-    const response = await api.get('/staff', { params })
+    const response = await api.post('/staff/list', params )
     
     const data = response.data.data ? response.data.data : (response.data.data || response.data)
     const meta = response.data.meta ? response.data.meta : response.data
@@ -268,10 +268,10 @@ const saveStaff = async () => {
   errors.value = {}
   try {
     if (isEditing.value) {
-      await api.put(`/staff/${form.value.id}`, form.value)
+      await api.post('/staff/save', form.value)
       Swal.fire('Success', 'Staff updated successfully.', 'success')
     } else {
-      await api.post('/staff', form.value)
+      await api.post('/staff/save', form.value)
       Swal.fire('Success', 'Staff added successfully.', 'success')
     }
     closeModal()
@@ -302,7 +302,7 @@ const deleteStaff = async (id) => {
 
   if (result.isConfirmed) {
     try {
-      await api.delete(`/staff/${id}`)
+      await api.post('/staff/delete', { id })
       Swal.fire('Deleted!', 'Staff member has been deleted.', 'success')
       fetchStaff(pagination.value.current_page)
     } catch (error) {

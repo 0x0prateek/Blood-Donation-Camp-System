@@ -192,7 +192,7 @@ onMounted(() => {
 
 async function fetchTemplates() {
   try {
-    const res = await api.get('/templates')
+    const res = await api.post('/templates/list')
     templates.value = res.data.data || []
   } catch (err) {
     console.error('Failed to load templates:', err)

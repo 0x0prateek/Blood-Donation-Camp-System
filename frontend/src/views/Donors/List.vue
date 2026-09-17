@@ -163,7 +163,7 @@ const fetchDonors = async (page = 1) => {
       blood_group: filters.value.blood_group,
       status: filters.value.status
     }
-    const response = await api.get('/donors', { params })
+    const response = await api.post('/donors/list', params )
     
     // Support standard laravel paginator or api resource structure
     const data = response.data.data ? response.data.data : (response.data.data || response.data)
@@ -213,7 +213,7 @@ const toggleStatus = async (donor) => {
 
   if (result.isConfirmed) {
     try {
-      await api.put(`/donors/${donor.id}`, { ...donor, status: newStatus })
+      await api.post('/donors/status', { id: donor.id, status: newStatus })
       Swal.fire('Updated!', `Donor has been ${newStatus.toLowerCase()}.`, 'success')
       fetchDonors(pagination.value.current_page)
     } catch (error) {
@@ -236,7 +236,7 @@ const deleteDonor = async (id) => {
 
   if (result.isConfirmed) {
     try {
-      await api.delete(`/donors/${id}`)
+      await api.post('/donors/delete', { id })
       Swal.fire('Deleted!', 'Donor has been deleted.', 'success')
       fetchDonors(pagination.value.current_page)
     } catch (error) {

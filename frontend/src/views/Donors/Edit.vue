@@ -152,7 +152,7 @@ const form = ref({
 const fetchDonor = async () => {
   try {
     const id = route.params.id
-    const response = await api.get(`/donors/${id}`)
+    const response = await api.post('/donors/list', { id })
     const data = response.data.data || response.data
     // Map response to form fields
     for (const key in form.value) {
@@ -174,7 +174,7 @@ const updateDonor = async () => {
   errors.value = {}
   try {
     const id = route.params.id
-    await api.put(`/donors/${id}`, form.value)
+    await api.post('/donors/save', { ...form.value, id })
     Swal.fire('Success', 'Donor updated successfully.', 'success')
     router.push('/donors')
   } catch (error) {

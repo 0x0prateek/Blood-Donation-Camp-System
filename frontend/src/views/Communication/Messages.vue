@@ -258,9 +258,9 @@ const messagePreview = computed(() => {
 onMounted(async () => {
   try {
     const [tplRes, donRes, campRes] = await Promise.all([
-      api.get('/templates').catch(() => ({ data: { data: [] } })),
-      api.get('/donors?status=Active').catch(() => ({ data: { data: [] } })),
-      api.get('/camps?status=Upcoming').catch(() => ({ data: { data: [] } }))
+      api.post('/templates/list').catch(() => ({ data: { data: [] } })),
+      api.post('/donors/list', { status: 'Active' }).catch(() => ({ data: { data: [] } })),
+      api.post('/camps/list', { status: 'Upcoming' }).catch(() => ({ data: { data: [] } }))
     ])
     templates.value = tplRes.data.data || []
     donors.value = donRes.data.data || []
@@ -273,7 +273,7 @@ onMounted(async () => {
 
 async function fetchHistory() {
   try {
-    const res = await api.get('/messages/log', { params: historyFilter })
+    const res = await api.post('/messages/log', historyFilter.value )
     historyLogs.value = res.data.data || []
   } catch (err) {
     console.error('Failed to load history:', err)

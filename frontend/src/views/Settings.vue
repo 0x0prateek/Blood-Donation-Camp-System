@@ -311,7 +311,7 @@ const loadSettings = async () => {
 
 const loadAccount = async () => {
   try {
-    const response = await api.get('/account/info')
+    const response = await api.get('/auth/me')
     if (response.data && response.data.success) {
       account.value.name = response.data.data.name
       account.value.email = response.data.data.email
@@ -323,7 +323,7 @@ const loadAccount = async () => {
 
 const loadTemplates = async () => {
   try {
-    const response = await api.get('/templates')
+    const response = await api.post('/templates/list')
     if (response.data && response.data.success) {
       waTemplates.value = response.data.data.filter(t => t.whatsapp_template_name) || []
       smsTemplates.value = response.data.data || []

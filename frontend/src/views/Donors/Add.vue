@@ -146,7 +146,7 @@ const saveDonor = async () => {
   saving.value = true
   errors.value = {}
   try {
-    await api.post('/donors', form.value)
+    await api.post('/donors/save', form.value)
     Swal.fire('Success', 'Donor saved successfully.', 'success')
     router.push('/donors')
   } catch (error) {
