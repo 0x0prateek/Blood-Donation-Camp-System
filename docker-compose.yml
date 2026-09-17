@@ -1,0 +1,96 @@
+version: "3.9"
+
+# ── Blood Donor Management System ─────────────────────────────
+# OCI-compliant (works with docker compose AND podman compose)
+# Dev: docker compose up --build
+# Prod: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+
+  # ── MySQL / MariaDB ──────────────────────────────────────────
+  db:
+    image: mariadb:10.11
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASS:-rootpassword}
+      MARIADB_DATABASE: ${DB_NAME:-blood_donor_system}
+      MARIADB_USER: ${DB_USER:-blooddonor}
+      MARIADB_PASSWORD: ${DB_PASS:-bloodpass}
+    volumes:
+      - db_data:/var/lib/mysql
+      # Run schema on first boot
+      - ./database.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./migration-login-attempts.sql:/docker-entrypoint-initdb.d/02-login-attempts.sql:ro
+      - ./migration-staff.sql:/docker-entrypoint-initdb.d/03-staff.sql:ro
+      - ./migration-campaign-batching.sql:/docker-entrypoint-initdb.d/04-campaign-batching.sql:ro
+      - ./migration-camp-register.sql:/docker-entrypoint-initdb.d/05-camp-register.sql:ro
+      - ./migration-camp-finance.sql:/docker-entrypoint-initdb.d/06-camp-finance.sql:ro
+      - ./migration-schema-ledger.sql:/docker-entrypoint-initdb.d/07-schema-ledger.sql:ro
+      - ./migration-sinhala-templates.sql:/docker-entrypoint-initdb.d/08-sinhala-templates.sql:ro
+      - ./migration-whatsapp-templates.sql:/docker-entrypoint-initdb.d/09-whatsapp-templates.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - app-net
+
+  # ── PHP 8.2 REST API Backend ─────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DB_HOST: db
+      DB_NAME: ${DB_NAME:-blood_donor_system}
+      DB_USER: ${DB_USER:-blooddonor}
+      DB_PASS: ${DB_PASS:-bloodpass}
+      JWT_SECRET: ${JWT_SECRET:-change_me_in_production_to_a_long_random_string}
+      JWT_EXPIRY_HOURS: ${JWT_EXPIRY_HOURS:-2}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Colombo}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+      # Messaging — set in .env
+      WHATSAPP_API_TOKEN: ${WHATSAPP_API_TOKEN:-}
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
+      WHATSAPP_API_VERSION: ${WHATSAPP_API_VERSION:-v23.0}
+      SMS_GATEWAY: ${SMS_GATEWAY:-notify}
+      SMS_API_KEY: ${SMS_API_KEY:-}
+      SMS_API_SECRET: ${SMS_API_SECRET:-}
+      SMS_SENDER_ID: ${SMS_SENDER_ID:-}
+    volumes:
+      - ./backend:/var/www/html
+      - backend_uploads:/var/www/html/storage/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+    networks:
+      - app-net
+
+  # ── Vue 3 SPA Frontend ───────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE: /api
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - app-net
+
+volumes:
+  db_data:
+  backend_uploads:
+
+networks:
+  app-net:
+    driver: bridge

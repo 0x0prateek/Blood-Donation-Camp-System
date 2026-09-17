@@ -1,0 +1,35 @@
+# ── Production Overrides ───────────────────────────────────────
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# In production (Railway, VPS, etc.) you do NOT run this compose file.
+# Instead each service is deployed as a separate Railway service using its
+# own Dockerfile. This file is here for staging / self-hosted prod.
+
+version: "3.9"
+
+services:
+
+  db:
+    # No bind-mounted init scripts in prod; schema was applied at build-time
+    # or via a migration step.
+    restart: always
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    restart: always
+    # Remove dev port exposure — only reachable via internal network
+    ports: []
+    environment:
+      APP_DEBUG: "false"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      # Nginx will proxy /api to backend service on internal net
+      BACKEND_HOST: backend
