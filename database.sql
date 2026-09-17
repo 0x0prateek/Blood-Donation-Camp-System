@@ -291,7 +291,7 @@ ALTER TABLE `camp_registrations` ADD INDEX `idx_reg_mobile` (`mobile`);
 --
 -- After signing in, set your own email and password on Settings > Admin Account.
 INSERT INTO `admins` (`name`, `email`, `password`) VALUES
-('Administrator', 'admin@admin.com', '!LOCKED-SET-PASSWORD-BEFORE-USE');
+('Administrator', 'admin@admin.com', '$2b$10$5j78HUlYxqySs27KMBC3wu5vA346LWNDzBrC0566I3TeUAdz0ws2W');
 
 -- Default message templates
 INSERT INTO `message_templates` (`template_name`, `template_body`, `template_type`, `whatsapp_template_name`, `whatsapp_language`, `whatsapp_variables`) VALUES
