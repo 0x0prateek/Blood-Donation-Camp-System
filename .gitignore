@@ -45,3 +45,6 @@ desktop.ini
 *.swp
 *~
 backend/node_modules/
+
+# ── Legacy Code Reference ──────────────────────────────────────
+OLD_SYSTEM_PHP/
