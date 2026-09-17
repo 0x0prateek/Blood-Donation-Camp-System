@@ -19,7 +19,7 @@ export const useAuthStore = defineStore('auth', {
     },
     async logout() {
       try {
-        await api.post('/logout')
+        await api.post('/auth/logout')
         this.user = null
         this.isAuthenticated = false
       } catch (error) {
@@ -28,7 +28,7 @@ export const useAuthStore = defineStore('auth', {
     },
     async checkAuth() {
       try {
-        const response = await api.get('/user')
+        const response = await api.get('/auth/me')
         this.user = response.data.user
         this.isAuthenticated = true
       } catch (error) {

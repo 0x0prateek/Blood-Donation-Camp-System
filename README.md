@@ -95,8 +95,8 @@ docker compose up --build
 
 | Service | URL |
 |---|---|
-| Frontend (Vue SPA) | http://localhost |
-| Backend API | http://localhost:8080/api |
+| Frontend (Vue SPA) | http://localhost:3000 |
+| Backend API | http://localhost:3000:8080/api |
 | Database | localhost:3306 |
 
 ### 4. Set the admin password
