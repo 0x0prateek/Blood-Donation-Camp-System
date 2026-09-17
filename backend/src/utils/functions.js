@@ -62,10 +62,10 @@ const formatPhoneForAPI = (phone) => {
   return normalized;
 };
 
-const replacePlaceholders = (templatdata) => {
+const replacePlaceholders = (template, data) => {
   let result = template;
-  for (const [key, value] of Object.entridata)) {
-    const regex = new RegExp(`{${key}}`, 'g');
+  for (const [key, value] of Object.entries(data)) {
+    const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
     result = result.replace(regex, value);
   }
   return result;
@@ -75,10 +75,10 @@ const formatMoney = (amount, currencySymbol = 'Rs.') => {
   if (amount == null) return `${currencySymbol} 0.00`;
   const num = parseFloat(amount);
   if (isNaN(num)) return `${currencySymbol} 0.00`;
-  return `${currencySymbol} ${num.toFixed(2).replace(/\\d(?=(\\d{3})+\\.)/g, '$&,')}`;
+  return `${currencySymbol} ${num.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
 };
 
-condataTablePaging = (req, maxLength = 100, defaultLength = 25) => {
+const dataTablePaging = (req, maxLength = 100, defaultLength = 25) => {
   let start = Math.max(0, parseInt(req.body.start) || parseInt(req.query.start) || 0);
   let length = parseInt(req.body.length) || parseInt(req.query.length) || defaultLength;
   length = length <= 0 ? maxLength : Math.min(length, maxLength);
