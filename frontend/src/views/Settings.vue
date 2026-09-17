@@ -360,18 +360,19 @@ const saveSettings = async () => {
 
 const saveAccount = async () => {
   if (account.value.new_password !== account.value.confirm_password) {
-    Swal.fire('Error', 'The two passwords do not match.', 'error')
+    Swal.fire('Error', 'New passwords do not match.', 'error')
     return
   }
+  
   if (account.value.new_password && account.value.new_password.length < 10) {
-    Swal.fire('Error', 'New password must be at least 10 characters.', 'error')
+    Swal.fire('Error', 'Password must be at least 10 characters.', 'error')
     return
   }
 
   isSavingAccount.value = true
   try {
-    const response = await api.post('/account/save', account.value)
-    if (response.data && response.data.success) {
+    const response = await api.post('/auth/account-save', account.value)
+    if (response.data.success) {
       Swal.fire('Success', response.data.message || 'Account updated', 'success')
       account.value.new_password = ''
       account.value.confirm_password = ''
@@ -380,7 +381,7 @@ const saveAccount = async () => {
       Swal.fire('Error', response.data.message || 'Failed to update account', 'error')
     }
   } catch (error) {
-    Swal.fire('Error', 'An error occurred while updating the account', 'error')
+    Swal.fire('Error', error.response?.data?.message || 'An error occurred while updating the account', 'error')
   } finally {
     isSavingAccount.value = false
   }
