@@ -290,9 +290,16 @@ Set environment variables in the Railway dashboard → **Variables** tab for eac
 
 ### Railway env var mapping
 
+When using Railway's MySQL plugin, you must link its variables to your backend service. You can do this in the Railway Dashboard **Variables** tab by using the reference syntax `${{ MySQL.VARIABLE }}`, or by running the following command with the Railway CLI:
+
+```bash
+railway variables set "DB_HOST=\${{MySQL.MYSQLHOST}}" "DB_PORT=\${{MySQL.MYSQLPORT}}" "DB_NAME=\${{MySQL.MYSQLDATABASE}}" "DB_USER=\${{MySQL.MYSQLUSER}}" "DB_PASS=\${{MySQL.MYSQLPASSWORD}}"
+```
+
 | Railway MySQL Plugin var | Our var |
 |---|---|
 | `MYSQLHOST` | `DB_HOST` |
+| `MYSQLPORT` | `DB_PORT` |
 | `MYSQLDATABASE` | `DB_NAME` |
 | `MYSQLUSER` | `DB_USER` |
 | `MYSQLPASSWORD` | `DB_PASS` |
