@@ -147,9 +147,9 @@ Railway runs each service as a separate deployment. The quickest path:
 Create three Railway services in the same project:
 
 1. Add a Railway MySQL plugin.
-2. Create a backend service with root directory `backend/`. Its service config
-  is [backend/railway.json](backend/railway.json) and its Dockerfile is
-  `backend/Dockerfile`.
+2. Create a backend service from the repository root. The root
+  [railway.json](railway.json) and [Dockerfile](Dockerfile) explicitly select
+  Docker mode and build `backend/` for `/api/health`.
 3. Create a frontend service with root directory `frontend/`. Its service
   config is [frontend/railway.json](frontend/railway.json) and its Dockerfile
   is `frontend/Dockerfile`.
@@ -157,9 +157,15 @@ Create three Railway services in the same project:
   `/api`, for example `https://dotlife-api.up.railway.app/api`.
 5. Set the backend variable `FRONTEND_URL` to the public frontend URL.
 
-Railway builds the services independently. The frontend uses `VITE_API_BASE`
+Railway builds the services independently. The root deployment is the backend
+API; the frontend deployment uses `VITE_API_BASE`
 for direct production API calls, while local Docker Compose continues to use
 the internal `/api` Nginx proxy.
+
+For the backend service, set `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`,
+`JWT_SECRET`, and `FRONTEND_URL` in Railway Variables. Map the Railway MySQL
+plugin variables as shown below. Do not deploy the root as a Railpack Node
+application; the committed root Dockerfile is the intended build path.
 
 ### Option A — Railway CLI (recommended)
 

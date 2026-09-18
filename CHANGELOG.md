@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- Root Railway Docker deployment metadata and a backend Dockerfile fallback for
+  monorepo deployments that use the repository root as the service directory.
 - `database/05-demo-portal-data.sql` with 120 donor-portal users and 120
   blood-group requests for repeatable admin workflow testing.
 - Admin blood-request filtering/status management and donor request history.
