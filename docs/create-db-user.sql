@@ -68,9 +68,9 @@ FLUSH PRIVILEGES;
 -- ============================================================
 -- NOTE ON MIGRATIONS
 -- ============================================================
--- Because bdms_app cannot ALTER or CREATE, the migration-*.sql files
+-- Because bdms_app cannot ALTER or CREATE, the migrations/*.sql files
 -- must be run as an administrative user, not by the application:
---   mysql -u root < migration-staff.sql
+--   mysql -u root < migrations/migration-staff.sql
 -- This is intentional. An application that cannot change its own
 -- schema also cannot have its schema changed by an attacker who
 -- reaches it.

@@ -260,7 +260,7 @@ CREATE TABLE IF NOT EXISTS `login_attempts` (
 -- ============================================================
 -- 9. SCHEMA MIGRATIONS (ledger)
 --
--- Records which migration-*.sql files have been applied, so that
+-- Records which migrations/*.sql files have been applied, so that
 -- "which schema version is this database?" has a readable answer.
 -- Restoring an unlabelled dump silently rolled this schema backwards
 -- twice; the only symptom was a page going blank.
@@ -318,6 +318,11 @@ ALTER TABLE `camp_registrations` ADD INDEX `idx_reg_mobile` (`mobile`);
 INSERT INTO `admins` (`name`, `email`, `password`) VALUES
 ('Administrator', 'admin@admin.com', '$2b$10$5j78HUlYxqySs27KMBC3wu5vA346LWNDzBrC0566I3TeUAdz0ws2W');
 
+INSERT INTO `users` (`name`, `username`, `email`, `mobile`, `blood_group`, `password`, `role`, `status`) VALUES
+('Demo Donor', 'demo_donor', 'donor@dotlife.test', '0710000001', 'O+', '$2b$10$5j78HUlYxqySs27KMBC3wu5vA346LWNDzBrC0566I3TeUAdz0ws2W', 'user', 'Active'),
+('Kavindu Perera', 'kavindu_p', 'kavindu@dotlife.test', '0710000002', 'A+', '$2b$10$5j78HUlYxqySs27KMBC3wu5vA346LWNDzBrC0566I3TeUAdz0ws2W', 'user', 'Active'),
+('Nadeesha Silva', 'nadeesha_s', 'nadeesha@dotlife.test', '0710000003', 'B+', '$2b$10$5j78HUlYxqySs27KMBC3wu5vA346LWNDzBrC0566I3TeUAdz0ws2W', 'user', 'Active');
+
 -- Default message templates
 INSERT INTO `message_templates` (`template_name`, `template_body`, `template_type`, `whatsapp_template_name`, `whatsapp_language`, `whatsapp_variables`) VALUES
 ('Blood Camp Notification', 'Hello {NAME},\n\nOur upcoming blood donation camp will be held on:\n\nDate: {DATE}\nLocation: {LOCATION}\n\nWe would be grateful for your participation.\n\nThank you.', 'Camp Notification', 'blood_camp_notification', 'en', 'NAME,DATE,LOCATION'),
@@ -333,7 +338,7 @@ INSERT INTO `message_templates` (`template_name`, `template_body`, `template_typ
 
 -- Default settings
 INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES
-('app_name', 'Blood Donor Management System'),
+('app_name', 'DotLife'),
 ('organization_name', 'Blood Donor Organization'),
 ('country_code', '+94'),
 ('whatsapp_api_token', ''),

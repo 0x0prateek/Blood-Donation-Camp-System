@@ -59,6 +59,10 @@
             <i class="fas fa-exclamation-triangle"></i>
             <span>Emergency</span>
           </router-link>
+          <router-link to="/admin/blood-requests" class="nav-link" active-class="active">
+            <i class="fas fa-hospital"></i>
+            <span>Blood Requests</span>
+          </router-link>
         </div>
 
         <div class="nav-section">

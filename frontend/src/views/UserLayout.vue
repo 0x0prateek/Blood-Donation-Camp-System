@@ -13,8 +13,14 @@
         <router-link to="/user/dashboard" class="nav-item" active-class="active">
           <i class="fas fa-chart-line"></i> Dashboard
         </router-link>
+        <router-link to="/user/available-blood" class="nav-item" active-class="active">
+          <i class="fas fa-droplet"></i> Available Blood
+        </router-link>
+        <router-link to="/user/camp-registration" class="nav-item" active-class="active">
+          <i class="fas fa-calendar-check"></i> Camp Registration
+        </router-link>
         <router-link to="/user/blood-request" class="nav-item" active-class="active">
-          <i class="fas fa-droplet"></i> Blood Inquiry
+          <i class="fas fa-hospital"></i> Blood Inquiry
         </router-link>
         <router-link to="/user/profile" class="nav-item" active-class="active">
           <i class="fas fa-user"></i> Profile
@@ -48,7 +54,7 @@ const router = useRouter()
 
 const logout = async () => {
   await authStore.logout()
-  router.push('/login')
+  router.push({ name: 'Login', query: { mode: 'user' } })
 }
 </script>
 

@@ -11,12 +11,17 @@
           <i class="bi" :class="navOpen ? 'bi-x-lg' : 'bi-list'"></i>
         </button>
         <div class="nav-links" :class="{ open: navOpen }">
+          <router-link to="/about" @click="navOpen = false">About</router-link>
+          <router-link to="/gallery" @click="navOpen = false">Gallery</router-link>
           <a href="#features" @click="navOpen = false">Features</a>
           <a href="#how-it-works" @click="navOpen = false">How It Works</a>
           <a href="#impact" @click="navOpen = false">Impact</a>
-          <a href="#contact" @click="navOpen = false">Contact</a>
-          <router-link to="/admin/login" class="btn btn-nav-login">
-            <i class="bi bi-box-arrow-in-right me-1"></i> Admin Login
+          <router-link to="/contact" @click="navOpen = false">Contact</router-link>
+          <router-link to="/login" class="btn btn-nav-login">
+            <i class="bi bi-box-arrow-in-right me-1"></i> Login
+          </router-link>
+          <router-link to="/donor/register" class="btn btn-nav-signup">
+            <i class="bi bi-person-plus me-1"></i> Sign up
           </router-link>
         </div>
       </div>
@@ -40,11 +45,11 @@
               with one platform your organising committee can actually run a camp from.
             </p>
             <div class="d-flex flex-wrap gap-3 mt-4">
-              <router-link to="/donor/register" class="btn btn-cta-primary">
-                <i class="bi bi-droplet-fill me-2"></i> Become a Donor
+              <router-link to="/login" class="btn btn-cta-primary">
+                <i class="bi bi-box-arrow-in-right me-2"></i> Login
               </router-link>
-              <router-link to="/admin/login" class="btn btn-cta-secondary">
-                Organiser Login <i class="bi bi-arrow-right ms-1"></i>
+              <router-link to="/donor/register" class="btn btn-cta-secondary">
+                Sign up <i class="bi bi-arrow-right ms-1"></i>
               </router-link>
             </div>
           </div>
@@ -162,8 +167,8 @@
           <router-link to="/donor/register" class="btn btn-cta-primary">
             <i class="bi bi-droplet-fill me-2"></i> I want to donate blood
           </router-link>
-          <router-link to="/admin/login" class="btn btn-cta-secondary">
-            <i class="bi bi-speedometer2 me-2"></i> Organiser Login
+          <router-link to="/login" class="btn btn-cta-secondary">
+            <i class="bi bi-speedometer2 me-2"></i> Login
           </router-link>
         </div>
       </div>
@@ -183,6 +188,9 @@
           <div class="col-md-4">
             <h6>Platform</h6>
             <ul class="footer-links">
+              <li><router-link to="/about">About Us</router-link></li>
+              <li><router-link to="/gallery">Camp Gallery</router-link></li>
+              <li><router-link to="/contact">Contact Us</router-link></li>
               <li><a href="#features">Features</a></li>
               <li><a href="#how-it-works">How It Works</a></li>
               <li><a href="#impact">Impact</a></li>
@@ -191,9 +199,9 @@
           <div class="col-md-4">
             <h6>Administration</h6>
             <ul class="footer-links">
-              <li><router-link to="/admin/login">Organiser Login</router-link></li>
-              <li><router-link to="/donor/login">Donor Login</router-link></li>
-              <li><router-link to="/donor/register">Donor Registration</router-link></li>
+              <li><router-link to="/login">Login</router-link></li>
+              <li><router-link to="/donor/register">Sign up</router-link></li>
+              <li><router-link to="/admin/login">Admin access</router-link></li>
             </ul>
           </div>
         </div>

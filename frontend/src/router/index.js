@@ -11,6 +11,24 @@ const routes = [
     meta: { requiresAuth: false, title: 'DotLife - Connect Donors, Save Lives' }
   },
   {
+    path: '/about',
+    name: 'About',
+    component: () => import('../views/About.vue'),
+    meta: { requiresAuth: false, title: 'About DotLife' }
+  },
+  {
+    path: '/gallery',
+    name: 'Gallery',
+    component: () => import('../views/Gallery.vue'),
+    meta: { requiresAuth: false, title: 'Donation Gallery' }
+  },
+  {
+    path: '/contact',
+    name: 'Contact',
+    component: () => import('../views/Contact.vue'),
+    meta: { requiresAuth: false, title: 'Contact DotLife' }
+  },
+  {
     path: '/login',
     name: 'Login',
     component: () => import('../views/Login.vue'),
@@ -18,21 +36,15 @@ const routes = [
   },
   {
     path: '/admin/login',
-    name: 'AdminLogin',
-    component: () => import('../views/Login.vue'),
-    meta: { requiresAuth: false, title: 'Organiser Login' }
+    redirect: { name: 'Login', query: { mode: 'admin' } }
   },
   {
     path: '/donor/login',
-    name: 'DonorLogin',
-    component: () => import('../views/Login.vue'),
-    meta: { requiresAuth: false, title: 'Donor Login' }
+    redirect: { name: 'Login', query: { mode: 'user' } }
   },
   {
     path: '/donor/register',
-    name: 'DonorRegister',
-    component: () => import('../views/Login.vue'),
-    meta: { requiresAuth: false, title: 'Donor Registration' }
+    redirect: { name: 'Login', query: { mode: 'user', signup: '1' } }
   },
   {
     path: '/user',
@@ -41,6 +53,8 @@ const routes = [
     children: [
       { path: '', redirect: '/user/dashboard' },
       { path: 'dashboard', name: 'UserDashboard', component: () => import('../views/UserDashboard.vue'), meta: { title: 'Donor Dashboard' } },
+      { path: 'available-blood', name: 'UserAvailableBlood', component: () => import('../views/UserAvailableBlood.vue'), meta: { title: 'Available Blood' } },
+      { path: 'camp-registration', name: 'UserCampRegistration', component: () => import('../views/UserCampRegistration.vue'), meta: { title: 'Camp Registration' } },
       { path: 'blood-request', name: 'UserBloodRequest', component: () => import('../views/UserBloodRequest.vue'), meta: { title: 'Blood Inquiry' } },
       { path: 'profile', name: 'UserProfile', component: () => import('../views/UserProfile.vue'), meta: { title: 'My Profile' } }
     ]
@@ -66,6 +80,7 @@ const routes = [
       { path: 'messages', name: 'Messages', component: () => import('../views/Communication/Messages.vue'), meta: { title: 'Messages' } },
       { path: 'templates', name: 'Templates', component: () => import('../views/Communication/Templates.vue'), meta: { title: 'Templates' } },
       { path: 'emergency', name: 'Emergency', component: () => import('../views/Communication/Emergency.vue'), meta: { title: 'Emergency Notifications' } },
+      { path: 'blood-requests', name: 'BloodRequests', component: () => import('../views/BloodRequests.vue'), meta: { title: 'Blood Requests' } },
       
       { path: 'reports', name: 'Reports', component: () => import('../views/Reports.vue'), meta: { title: 'Reports' } },
       
@@ -81,13 +96,14 @@ const router = createRouter({
 
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
-  
+
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     try {
       await authStore.checkAuth()
       next()
     } catch {
-      next('/login')
+      const targetRole = to.path.startsWith('/admin') ? 'admin' : 'user'
+      next({ name: 'Login', query: { mode: targetRole } })
     }
   } else {
     next()
@@ -95,7 +111,7 @@ router.beforeEach(async (to, from, next) => {
 })
 
 router.afterEach((to) => {
-  document.title = (to.meta.title || 'DotLife') + ' - Blood Donation Camp System'
+  document.title = (to.meta.title || 'DotLife') + ' - DotLife'
 })
 
 export default router

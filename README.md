@@ -53,10 +53,10 @@ Blood-Donation-Camp-System/
 │   ├── 01-setup.sql          (schema + seed data)
 │   ├── 02-dummy-data.sql     (demo donors/camps)
 │   ├── 03-more-dummy-data.sql
-│   └── 04-bulk-dummy-data.sql  (150 donors, 14 camps, registrations, finance, messages - for UI load testing)
-├── migration-*.sql   ← Standalone migrations from the pre-rewrite PHP app;
-│                        already folded into 01-setup.sql, kept for history
-└── PPTx/             ← Project presentation deck
+│   ├── 04-bulk-dummy-data.sql  (150 donors, 14 camps, registrations, finance, messages - for UI load testing)
+│   └── 05-demo-portal-data.sql (120 donor users and 120 blood requests)
+├── migrations/       ← Standalone database upgrades, applied in filename order
+└── OLD_SYSTEM_PHP/   ← Archived PHP application and non-runtime project artifacts
 ```
 
 ---
@@ -122,9 +122,19 @@ npm run dev
 If the database was created before the donor portal was added, apply the user
 portal migration before using donor registration or blood inquiries:
 
-```bat
-mysql -u root -p blood_donor_system < migration-user-portal.sql
+```bash
+mysql -u root -p blood_donor_system < migrations/migration-user-portal.sql
 ```
+
+For the optional development dataset, apply the portal seed after the schema
+exists:
+
+```bash
+mysql -u root -p blood_donor_system < database/05-demo-portal-data.sql
+```
+
+The seed creates 120 portal users and 120 specific blood-group requests for
+admin workflow testing. Every seeded portal user uses `password123`.
 
 ---
 
@@ -132,13 +142,33 @@ mysql -u root -p blood_donor_system < migration-user-portal.sql
 
 Railway runs each service as a separate deployment. The quickest path:
 
+### Railway service setup
+
+Create three Railway services in the same project:
+
+1. Add a Railway MySQL plugin.
+2. Create a backend service with root directory `backend/`. Its service config
+  is [backend/railway.json](backend/railway.json) and its Dockerfile is
+  `backend/Dockerfile`.
+3. Create a frontend service with root directory `frontend/`. Its service
+  config is [frontend/railway.json](frontend/railway.json) and its Dockerfile
+  is `frontend/Dockerfile`.
+4. Set the frontend variable `VITE_API_BASE` to the public backend URL plus
+  `/api`, for example `https://dotlife-api.up.railway.app/api`.
+5. Set the backend variable `FRONTEND_URL` to the public frontend URL.
+
+Railway builds the services independently. The frontend uses `VITE_API_BASE`
+for direct production API calls, while local Docker Compose continues to use
+the internal `/api` Nginx proxy.
+
 ### Option A — Railway CLI (recommended)
 
 ```bash
 npm install -g @railway/cli
 railway login
 railway init           # creates a new Railway project
-railway up             # deploys from Dockerfile
+# Run `railway up` from backend/ and frontend/ separately,
+# after linking each directory to its Railway service.
 ```
 
 Set environment variables in the Railway dashboard → **Variables** tab for each service. Use the same keys from `.env.example`.

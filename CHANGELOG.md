@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- `database/05-demo-portal-data.sql` with 120 donor-portal users and 120
+  blood-group requests for repeatable admin workflow testing.
+- Admin blood-request filtering/status management and donor request history.
+- Service-specific Railway configuration for the backend and frontend, with a
+  build-time `VITE_API_BASE` so separate Railway services can communicate.
+- Dedicated `migrations/` directory and migration documentation.
 - `database/04-bulk-dummy-data.sql` - a large, realistic demo dataset (150 donors, 12 staff, 14 additional camps, 200+ camp-register entries, camp finance records across 6 camps, 100+ message-log rows) for exercising pagination, filters, charts and reports with production-scale volumes instead of the original 5-donor/3-camp seed.
 - `GET /api/public/stats` - a new unauthenticated endpoint returning aggregate, non-identifying counts (active donors, camps, confirmed donations, blood groups covered) for the public landing page. Never returns donor names or mobiles.
 - Full redesign of the public landing page (`Landing.vue`): replaced the gamified "1 million donor campaign" mock-up (fake countdown timer, static donor count, no real content) with a professional site - hero with live platform stats, a features grid covering every admin module, a "how it works" register-desk workflow, a live impact section backed by `/api/public/stats`, a security/stack trust section, and a proper footer.
@@ -46,7 +52,7 @@ All notable changes to this project will be documented in this file.
 - Twilio SMS gateway is now actually implemented (`backend/src/utils/messaging.js`) - previously selecting it in Settings returned "not implemented in Node yet" regardless of credentials.
 - `database/01-setup.sql` now seeds the three Sinhala message templates on a fresh install (previously only available via the standalone `migration-sinhala-templates.sql`, so a Docker/Podman fresh install never had them).
 - `backend/src/index.js`: a catch-all 404 JSON handler for `/api/*` and a last-resort error-handling middleware that never leaks stack traces to the client (only when `APP_DEBUG=true`).
-- `PPTx/Blood_Donation_Camp_System_Presentation.pptx` - a project-overview slide deck covering architecture, stack, database design, security and deployment.
+- `OLD_SYSTEM_PHP/archive/PPTx/Blood_Donation_Camp_System_Presentation.pptx` - a project-overview slide deck covering architecture, stack, database design, security and deployment.
 
 ### Security
 - Login now enforces brute-force throttling (5 failed attempts per email / 20 per IP within 15 minutes) using the previously-unused `login_attempts` table.

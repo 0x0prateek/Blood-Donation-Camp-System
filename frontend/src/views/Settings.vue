@@ -261,7 +261,7 @@ const hasSavedWhatsappToken = ref(false)
 const hasSavedSmsSecret = ref(false)
 
 const settings = ref({
-  app_name: 'Blood Donation Camp System',
+  app_name: 'DotLife',
   organization_name: '',
   country_code: '+94',
   currency_symbol: 'Rs.',

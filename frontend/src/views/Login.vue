@@ -32,8 +32,8 @@
         </div>
 
         <div v-if="!isDedicatedRoute" class="role-switch mb-4">
-          <button type="button" class="role-pill" :class="{ active: role === 'admin' }" @click="role = 'admin'">Admin</button>
-          <button type="button" class="role-pill" :class="{ active: role === 'user' }" @click="role = 'user'">Normal User</button>
+          <button type="button" class="role-pill" :class="{ active: role === 'user' }" @click="setRole('user')">User</button>
+          <button type="button" class="role-pill" :class="{ active: role === 'admin' }" @click="setRole('admin')">Admin</button>
         </div>
 
         <div v-if="!isSignup">
@@ -132,12 +132,22 @@ const password = ref('')
 const loading = ref(false)
 const error = ref('')
 const isDedicatedRoute = computed(() => ['/admin/login', '/donor/login', '/donor/register'].includes(route.path))
-const role = ref(route.path === '/donor/login' || route.path === '/donor/register' ? 'user' : 'admin')
-const isSignup = ref(route.path === '/donor/register')
+const role = ref(route.query.mode === 'user' ? 'user' : 'admin')
+const isSignup = ref(route.query.signup === '1')
 
-watch(() => route.path, (path) => {
-  role.value = path === '/donor/login' || path === '/donor/register' ? 'user' : 'admin'
-  isSignup.value = path === '/donor/register'
+const setRole = (nextRole) => {
+  role.value = nextRole
+  if (nextRole === 'admin') {
+    router.replace({ name: 'Login', query: { mode: 'admin' } })
+  } else {
+    router.replace({ name: 'Login', query: { mode: 'user' } })
+  }
+}
+
+watch(() => [route.path, route.query.mode, route.query.signup], ([path, mode, signup]) => {
+  const nextRole = mode === 'user' ? 'user' : 'admin'
+  role.value = nextRole
+  isSignup.value = signup === '1'
   error.value = ''
 })
 

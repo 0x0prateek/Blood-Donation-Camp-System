@@ -3,7 +3,7 @@ import api from '../plugins/axios'
 
 export const useSettingsStore = defineStore('settings', {
   state: () => ({
-    appName: 'Blood Donation Camp System',
+    appName: 'DotLife',
     theme: 'light',
     // ... other settings
   }),

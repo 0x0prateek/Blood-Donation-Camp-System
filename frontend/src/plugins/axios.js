@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_BASE || '/api',
   withCredentials: true,
   headers: {
     'Accept': 'application/json',
@@ -16,8 +16,9 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      // Redirect to login if unauthorized
-      window.location.href = '/login'
+      const currentPath = window.location.pathname || '/'
+      const mode = currentPath.startsWith('/admin') ? 'admin' : 'user'
+      window.location.href = `/login?mode=${mode}`
     }
     return Promise.reject(error)
   }

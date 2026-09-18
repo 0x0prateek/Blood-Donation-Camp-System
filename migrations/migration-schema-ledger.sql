@@ -4,7 +4,7 @@
 -- Run this ONCE. It is the bootstrap for scripts/migrate.php.
 --
 -- WHY
---   There are seven migration-*.sql files and, until now, nothing
+--   There are nine migration-*.sql files and, until now, nothing
 --   recording which had been applied. That is not a theoretical gap:
 --   a restore of an old dump silently rolled this database backwards
 --   twice, and both times the only symptom was a page going blank.

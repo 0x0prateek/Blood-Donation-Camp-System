@@ -77,10 +77,10 @@ const fetchData = async () => {
   try {
     const [camps, requests] = await Promise.all([
       api.get('/camps/list', { data: { draw: 1, start: 0, length: 5, filter: 'upcoming' } }),
-      api.get('/public/stats')
+      api.get('/blood-requests/list')
     ])
     upcomingCamps.value = camps.data?.data || []
-    bloodRequests.value = []
+    bloodRequests.value = requests.data?.data?.requests || []
   } catch (error) {
     console.error('Unable to load user dashboard', error)
   }

@@ -46,4 +46,6 @@ desktop.ini
 backend/node_modules/
 
 # ── Legacy Code Reference ──────────────────────────────────────
-OLD_SYSTEM_PHP/
+OLD_SYSTEM_PHP/*
+!OLD_SYSTEM_PHP/archive/
+!OLD_SYSTEM_PHP/archive/**

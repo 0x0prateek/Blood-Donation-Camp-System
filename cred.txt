@@ -1,6 +1,12 @@
-Admin Login Credentials (Demo)
-==============================
+DotLife Demo Credentials
+========================
 Email: admin@admin.com
 Password: password123
 
-Note: This is a demo project, so these credentials are hardcoded for easy access.
+User accounts (all use password123)
+------------------------------------
+Username: demo_donor   Email: donor@dotlife.test    Blood group: O+
+Username: kavindu_p    Email: kavindu@dotlife.test  Blood group: A+
+Username: nadeesha_s   Email: nadeesha@dotlife.test Blood group: B+
+
+Note: These are development-only demo credentials. Change them before deployment.

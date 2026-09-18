@@ -1,6 +1,8 @@
 # build stage
 FROM node:20-alpine as build-stage
 WORKDIR /app
+ARG VITE_API_BASE=/api
+ENV VITE_API_BASE=$VITE_API_BASE
 COPY package*.json ./
 RUN npm install
 COPY . .
