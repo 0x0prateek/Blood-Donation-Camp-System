@@ -23,7 +23,9 @@ const templateRoutes = require('./routes/templates');
 const settingRoutes = require('./routes/settings');
 const messageRoutes = require('./routes/messages');
 const reportRoutes = require('./routes/reports');
+const publicRoutes = require('./routes/public');
 
+app.use('/api/public', publicRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/donors', donorRoutes);
 app.use('/api/camps', campRoutes);

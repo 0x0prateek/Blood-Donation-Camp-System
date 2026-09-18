@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- `database/04-bulk-dummy-data.sql` - a large, realistic demo dataset (150 donors, 12 staff, 14 additional camps, 200+ camp-register entries, camp finance records across 6 camps, 100+ message-log rows) for exercising pagination, filters, charts and reports with production-scale volumes instead of the original 5-donor/3-camp seed.
+- `GET /api/public/stats` - a new unauthenticated endpoint returning aggregate, non-identifying counts (active donors, camps, confirmed donations, blood groups covered) for the public landing page. Never returns donor names or mobiles.
+- Full redesign of the public landing page (`Landing.vue`): replaced the gamified "1 million donor campaign" mock-up (fake countdown timer, static donor count, no real content) with a professional site - hero with live platform stats, a features grid covering every admin module, a "how it works" register-desk workflow, a live impact section backed by `/api/public/stats`, a security/stack trust section, and a proper footer.
+- Custom favicon and app icon: a blood-drop + heartbeat mark (`frontend/public/favicon.svg`, plus PNG fallbacks for `apple-touch-icon` and legacy favicon sizes), replacing the default Vite icon. Page `<title>` updated to "DotLife | Blood Donation Camp System".
 - Complete migration of the frontend from PHP server-rendered pages to a Vue 3 Single Page Application (SPA).
 - Implemented state management using Pinia for authentication and global settings.
 - Migrated legacy chunked-sending logic (for WhatsApp and SMS) directly into Vue components (`Messages.vue`, `Emergency.vue`) to ensure bulk messages don't time out.

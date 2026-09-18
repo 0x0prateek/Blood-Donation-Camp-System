@@ -58,7 +58,8 @@ Blood-Donation-Camp-System/
 ├── database/          ← SQL run on first container boot, in order
 │   ├── 01-setup.sql          (schema + seed data)
 │   ├── 02-dummy-data.sql     (demo donors/camps)
-│   └── 03-more-dummy-data.sql
+│   ├── 03-more-dummy-data.sql
+│   └── 04-bulk-dummy-data.sql  (150 donors, 14 camps, registrations, finance, messages - for UI load testing)
 ├── migration-*.sql   ← Standalone migrations from the pre-rewrite PHP app;
 │                        already folded into 01-setup.sql, kept for history
 └── PPTx/             ← Project presentation deck
@@ -171,6 +172,7 @@ where noted).
 
 | Method | Path | Description |
 |---|---|---|
+| GET | `/api/public/stats` | Public, unauthenticated aggregate stats (used by the landing page) |
 | POST | `/api/auth/login` | Login |
 | POST | `/api/auth/logout` | Logout |
 | GET | `/api/auth/me` | Current user |
