@@ -154,6 +154,7 @@ import Swal from 'sweetalert2'
 
 const staffList = ref([])
 const loading = ref(false)
+const PER_PAGE = 25
 
 const filters = ref({
   status: 'Active'
@@ -180,29 +181,25 @@ const pageNumbers = computed(() => {
 const fetchStaff = async (page = 1) => {
   loading.value = true
   try {
-    const params = {
-      page,
-      status: filters.value.status
-    }
-    const response = await api.post('/staff/list', params )
-    
-    const data = response.data.data ? response.data.data : (response.data.data || response.data)
-    const meta = response.data.meta ? response.data.meta : response.data
-    
-    if (Array.isArray(data)) {
-      staffList.value = data
-    } else if (response.data.data && Array.isArray(response.data.data.data)) {
-      staffList.value = response.data.data.data
-    } else {
-      staffList.value = []
-    }
+    const start = (page - 1) * PER_PAGE
+    const response = await api.post('/staff/list', {
+      draw: 1,
+      start,
+      length: PER_PAGE,
+      status: filters.value.status,
+      order: [{ column: 0, dir: 'asc' }]
+    })
 
+    staffList.value = response.data.data || []
+
+    const total = response.data.recordsFiltered || 0
+    const lastPage = Math.max(1, Math.ceil(total / PER_PAGE))
     pagination.value = {
-      current_page: meta.current_page || 1,
-      last_page: meta.last_page || 1,
-      total: meta.total || 0,
-      from: meta.from || 0,
-      to: meta.to || 0
+      current_page: page,
+      last_page: lastPage,
+      total,
+      from: total === 0 ? 0 : start + 1,
+      to: Math.min(start + staffList.value.length, total)
     }
   } catch (error) {
     console.error('Error fetching staff:', error)

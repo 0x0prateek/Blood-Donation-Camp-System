@@ -5,7 +5,7 @@
         <div class="card shadow-sm">
           <div class="card-header bg-white d-flex align-items-center justify-content-between py-3">
             <h5 class="mb-0"><i class="fas fa-user-edit me-2 text-primary"></i> Edit Donor</h5>
-            <router-link to="/donors" class="btn btn-outline-secondary btn-sm">
+            <router-link to="/admin/donors" class="btn btn-outline-secondary btn-sm">
               <i class="fas fa-arrow-left me-1"></i> Back
             </router-link>
           </div>
@@ -109,7 +109,7 @@
               <hr class="my-4">
 
               <div class="d-flex gap-2 justify-content-end">
-                <router-link to="/donors" class="btn btn-outline-secondary">Cancel</router-link>
+                <router-link to="/admin/donors" class="btn btn-outline-secondary">Cancel</router-link>
                 <button type="submit" class="btn btn-primary" :disabled="saving">
                   <i class="fas fa-spinner fa-spin me-1" v-if="saving"></i>
                   <i class="fas fa-save me-1" v-else></i> Update Donor
@@ -152,14 +152,16 @@ const form = ref({
 const fetchDonor = async () => {
   try {
     const id = route.params.id
-    const response = await api.post('/donors/list', { id })
-    const data = response.data.data || response.data
+    const response = await api.get(`/donors/${id}`)
+    const data = response.data.data || {}
     // Map response to form fields
     for (const key in form.value) {
-      if (data[key] !== undefined) {
+      if (data[key] !== undefined && data[key] !== null) {
         form.value[key] = data[key]
       }
     }
+    if (form.value.date_of_birth) form.value.date_of_birth = String(form.value.date_of_birth).slice(0, 10)
+    if (form.value.last_donation_date) form.value.last_donation_date = String(form.value.last_donation_date).slice(0, 10)
   } catch (error) {
     console.error('Error fetching donor:', error)
     Swal.fire('Error', 'Failed to load donor details.', 'error')

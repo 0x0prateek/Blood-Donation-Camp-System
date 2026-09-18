@@ -114,9 +114,10 @@ router.post('/delete', authMiddleware, async (req, res) => {
 // POST /api/camps/budget-save
 router.post('/budget-save', authMiddleware, async (req, res) => {
   const camp_id = parseInt(req.body.camp_id);
-  const budget_amount = parseFloat(req.body.budget_amount) || 0;
+  const raw = req.body.budget_amount;
+  const budget_amount = (raw === '' || raw === null || raw === undefined) ? null : parseFloat(raw);
 
-  if (!camp_id || budget_amount < 0) {
+  if (!camp_id || (budget_amount !== null && (isNaN(budget_amount) || budget_amount < 0))) {
     return sendJsonResponse(res, false, 'Invalid parameters', {}, 400);
   }
 

@@ -95,8 +95,6 @@ router.post('/delete', authMiddleware, async (req, res) => {
   }
 });
 
-module.exports = router;
-
 // POST /api/templates/sync
 router.post('/sync', authMiddleware, async (req, res) => {
   try {
@@ -166,3 +164,5 @@ router.post('/sync', authMiddleware, async (req, res) => {
     return sendJsonResponse(res, false, 'Internal server error', {}, 500);
   }
 });
+
+module.exports = router;

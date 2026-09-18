@@ -3,7 +3,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h2 class="mb-0">Donors</h2>
       <div class="d-flex gap-2">
-        <router-link to="/donors/add" class="btn btn-primary">
+        <router-link to="/admin/donors/add" class="btn btn-primary">
           <i class="fas fa-plus me-1"></i> Add Donor
         </router-link>
       </div>
@@ -80,7 +80,7 @@
                 </td>
                 <td class="text-end">
                   <div class="btn-group btn-group-sm">
-                    <router-link :to="`/donors/${donor.id}/edit`" class="btn btn-outline-primary" title="Edit">
+                    <router-link :to="`/admin/donors/${donor.id}/edit`" class="btn btn-outline-primary" title="Edit">
                       <i class="fas fa-edit"></i>
                     </router-link>
                     <button class="btn btn-outline-warning" @click="toggleStatus(donor)" :title="donor.status === 'Active' ? 'Deactivate' : 'Activate'">
@@ -129,6 +129,7 @@ import Swal from 'sweetalert2'
 
 const donors = ref([])
 const loading = ref(false)
+const PER_PAGE = 25
 
 const filters = ref({
   search: '',
@@ -157,32 +158,27 @@ const pageNumbers = computed(() => {
 const fetchDonors = async (page = 1) => {
   loading.value = true
   try {
-    const params = {
-      page,
-      search: filters.value.search,
+    const start = (page - 1) * PER_PAGE
+    const response = await api.post('/donors/list', {
+      draw: 1,
+      start,
+      length: PER_PAGE,
+      search: { value: filters.value.search },
       blood_group: filters.value.blood_group,
-      status: filters.value.status
-    }
-    const response = await api.post('/donors/list', params )
-    
-    // Support standard laravel paginator or api resource structure
-    const data = response.data.data ? response.data.data : (response.data.data || response.data)
-    const meta = response.data.meta ? response.data.meta : response.data
-    
-    if (Array.isArray(data)) {
-      donors.value = data
-    } else if (response.data.data && Array.isArray(response.data.data.data)) { // in case of { data: { data: [] } }
-      donors.value = response.data.data.data
-    } else {
-      donors.value = []
-    }
+      status: filters.value.status,
+      order: [{ column: 0, dir: 'asc' }]
+    })
 
+    donors.value = response.data.data || []
+
+    const total = response.data.recordsFiltered || 0
+    const lastPage = Math.max(1, Math.ceil(total / PER_PAGE))
     pagination.value = {
-      current_page: meta.current_page || 1,
-      last_page: meta.last_page || 1,
-      total: meta.total || 0,
-      from: meta.from || 0,
-      to: meta.to || 0
+      current_page: page,
+      last_page: lastPage,
+      total,
+      from: total === 0 ? 0 : start + 1,
+      to: Math.min(start + donors.value.length, total)
     }
   } catch (error) {
     console.error('Error fetching donors:', error)

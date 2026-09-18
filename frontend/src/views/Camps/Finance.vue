@@ -55,7 +55,7 @@
           <i class="fas fa-campground d-block mb-3" style="font-size:2.5rem;"></i>
           <h5>No blood camps yet</h5>
           <p class="text-secondary mb-3">Create a camp first, then you can track its donations and expenses.</p>
-          <router-link to="/camps" class="btn btn-primary">
+          <router-link to="/admin/camps" class="btn btn-primary">
             <i class="fas fa-plus me-1"></i> Create a Camp
           </router-link>
         </div>
@@ -595,15 +595,15 @@ const filterContribStatus = ref('')
 const filterExpenseCategory = ref('')
 const filterExpenseStatus = ref('')
 
+// Must match the ENUM values in database/01-setup.sql exactly - MySQL
+// silently rejects or truncates any value outside the enum.
 const contribCategories = [
-  'Cash', 'Food', 'Water & Beverages', 'Medical Supplies', 'Venue/Facilities',
-  'Transport', 'Gifts/Tokens', 'Other'
+  'Cash', 'Food', 'Drinks', 'Water', 'Snacks', 'Medical', 'Equipment', 'Other'
 ]
 const expenseCategories = [
-  'Food & Refreshments', 'Medical Supplies', 'Venue Hire', 'Transport',
-  'Marketing & Print', 'Gifts/Tokens', 'Other'
+  'Food', 'Drinks', 'Water', 'Transport', 'Printing', 'Venue', 'Medical', 'Decoration', 'Volunteer', 'Other'
 ]
-const paymentMethods = ['Cash', 'Bank Transfer', 'Cheque', 'Other']
+const paymentMethods = ['Cash', 'Bank Transfer', 'Card', 'Online', 'Other']
 
 const chartColors = [
   '#6366f1', '#ef4444', '#22c55e', '#f59e0b', '#06b6d4',
@@ -656,7 +656,7 @@ const expenseForm = reactive({
   id: 0,
   camp_id: 0,
   description: '',
-  category: 'Food & Refreshments',
+  category: 'Food',
   amount: '',
   paid_to: '',
   expense_date: '',
@@ -872,7 +872,7 @@ const openExpenseModal = (item) => {
       id: 0,
       camp_id: selectedCampId.value,
       description: '',
-      category: 'Food & Refreshments',
+      category: 'Food',
       amount: '',
       paid_to: '',
       expense_date: new Date().toISOString().slice(0,10),
@@ -946,11 +946,16 @@ const catIcon = (cat) => {
   const icons = {
     'Cash': 'fa-money-bill-wave',
     'Food': 'fa-bowl-food',
-    'Water & Beverages': 'fa-bottle-water',
-    'Medical Supplies': 'fa-kit-medical',
-    'Venue/Facilities': 'fa-building',
+    'Drinks': 'fa-mug-hot',
+    'Water': 'fa-bottle-water',
+    'Snacks': 'fa-cookie-bite',
+    'Medical': 'fa-kit-medical',
+    'Equipment': 'fa-toolbox',
     'Transport': 'fa-truck',
-    'Gifts/Tokens': 'fa-gift',
+    'Printing': 'fa-print',
+    'Venue': 'fa-building',
+    'Decoration': 'fa-gift',
+    'Volunteer': 'fa-hands-helping',
     'Other': 'fa-box'
   }
   return icons[cat] || 'fa-box'

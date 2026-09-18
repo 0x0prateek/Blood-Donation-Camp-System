@@ -47,9 +47,18 @@ router.post('/list', authMiddleware, async (req, res) => {
       queryParams.push(...params);
     }
 
-    if (filter && filter !== 'all') {
+    const bloodGroup = req.body.blood_group || filter;
+    if (bloodGroup === '__none__') {
+      whereClauses.push("(blood_group IS NULL OR blood_group = '')");
+    } else if (bloodGroup && bloodGroup !== 'all') {
       whereClauses.push('blood_group = ?');
-      queryParams.push(filter);
+      queryParams.push(bloodGroup);
+    }
+
+    const status = req.body.status || '';
+    if (status && ['Active', 'Inactive'].includes(status)) {
+      whereClauses.push('status = ?');
+      queryParams.push(status);
     }
 
     const whereString = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
@@ -214,10 +223,15 @@ router.post('/import', authMiddleware, upload.single('import_file'), async (req,
     let skipped = 0;
     let errors = [];
 
-    // Assuming first row is header
-    worksheet.eachRow(async (row, rowNumber) => {
+    // Collect rows first: eachRow's callback is not awaited by exceljs,
+    // so async work inside it would race past the response being sent.
+    const pendingRows = [];
+    worksheet.eachRow((row, rowNumber) => {
       if (rowNumber === 1) return; // skip header
+      pendingRows.push({ row, rowNumber });
+    });
 
+    for (const { row, rowNumber } of pendingRows) {
       const name = sanitize(row.getCell(1).value?.toString() || '');
       let mobile = normalizeMobile(sanitize(row.getCell(2).value?.toString() || ''));
       let whatsapp = normalizeMobile(sanitize(row.getCell(3).value?.toString() || ''));
@@ -227,7 +241,13 @@ router.post('/import', authMiddleware, upload.single('import_file'), async (req,
       if (!name || !mobile || !blood_group) {
         skipped++;
         errors.push(`Row ${rowNumber}: Missing required fields`);
-        return;
+        continue;
+      }
+
+      if (name === '?') {
+        skipped++;
+        errors.push(`Row ${rowNumber}: Name arrived as "?" - likely a Windows ANSI CSV re-save that cannot represent Sinhala`);
+        continue;
       }
 
       if (!whatsapp) whatsapp = mobile;
@@ -248,7 +268,7 @@ router.post('/import', authMiddleware, upload.single('import_file'), async (req,
         skipped++;
         errors.push(`Row ${rowNumber}: ${err.message}`);
       }
-    });
+    }
 
     return sendJsonResponse(res, true, `Imported ${imported} donors. Skipped ${skipped}.`, { errors });
   } catch (error) {
@@ -257,19 +277,39 @@ router.post('/import', authMiddleware, upload.single('import_file'), async (req,
   }
 });
 
-module.exports = router;
-
 // GET /api/donors/blood-group-counts
 router.get('/blood-group-counts', authMiddleware, async (req, res) => {
   try {
     const [rows] = await pool.execute(`
-      SELECT blood_group, COUNT(*) as count 
-      FROM donors 
+      SELECT blood_group, COUNT(*) as count
+      FROM donors
       WHERE status = 'Active' AND blood_group IS NOT NULL AND blood_group <> ''
       GROUP BY blood_group
     `);
-    return sendJsonResponse(res, true, 'Blood group counts loaded', { counts: rows });
+    const counts = {};
+    rows.forEach(r => counts[r.blood_group] = r.count);
+    return sendJsonResponse(res, true, 'Blood group counts loaded', counts);
   } catch (error) {
     return sendJsonResponse(res, false, 'Internal server error', {}, 500);
   }
 });
+
+// GET /api/donors/:id - must be registered after all other GET routes
+// above (/export, /blood-group-counts) so it doesn't shadow them.
+router.get('/:id', authMiddleware, async (req, res) => {
+  const id = parseInt(req.params.id);
+  if (!id) return sendJsonResponse(res, false, 'Invalid ID', {}, 400);
+
+  try {
+    const [rows] = await pool.execute('SELECT * FROM donors WHERE id = ?', [id]);
+    if (rows.length === 0) {
+      return sendJsonResponse(res, false, 'Donor not found', {}, 404);
+    }
+    return sendJsonResponse(res, true, 'Donor loaded', rows[0]);
+  } catch (error) {
+    console.error('Donor fetch error:', error);
+    return sendJsonResponse(res, false, 'Internal server error', {}, 500);
+  }
+});
+
+module.exports = router;

@@ -10,9 +10,10 @@ export const useSettingsStore = defineStore('settings', {
   actions: {
     async fetchSettings() {
       try {
-        const response = await api.get('/settings')
-        if (response.data.appName) {
-          this.appName = response.data.appName
+        const response = await api.get('/settings/load')
+        const settings = response.data.data?.settings
+        if (settings?.app_name) {
+          this.appName = settings.app_name
         }
       } catch (error) {
         console.error('Failed to fetch settings', error)

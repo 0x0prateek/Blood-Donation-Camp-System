@@ -9,19 +9,41 @@ const exceljs = require('exceljs');
 router.get('/dashboard', authMiddleware, async (req, res) => {
   try {
     const [[{ total_donors }]] = await pool.execute("SELECT COUNT(*) as total_donors FROM donors WHERE status = 'Active'");
-    
+
     const [bgRows] = await pool.execute("SELECT blood_group, COUNT(*) as count FROM donors WHERE status = 'Active' GROUP BY blood_group");
     const blood_groups = {};
     bgRows.forEach(row => blood_groups[row.blood_group] = row.count);
 
-    const [camps] = await pool.execute("SELECT id, title, camp_date, location, status FROM blood_camps ORDER BY camp_date DESC LIMIT 5");
+    const [camps] = await pool.execute(
+      "SELECT id, title, camp_date, start_time, end_time, location, status FROM blood_camps WHERE camp_date >= CURDATE() AND status = 'Upcoming' ORDER BY camp_date ASC LIMIT 5"
+    );
+
+    const [[{ eligible_donors }]] = await pool.execute(
+      "SELECT COUNT(*) as eligible_donors FROM donors WHERE status = 'Active' AND (last_donation_date IS NULL OR last_donation_date <= DATE_SUB(NOW(), INTERVAL 4 MONTH))"
+    );
+
+    const [[{ messages_today }]] = await pool.execute(
+      "SELECT COUNT(*) as messages_today FROM message_logs WHERE status = 'Sent' AND DATE(sent_at) = CURDATE()"
+    );
+
+    const [recentMessages] = await pool.execute(`
+      SELECT ml.sent_at, ml.message_type, ml.status, ml.mobile, COALESCE(d.donor_name, s.name, 'Unknown') AS donor_name
+      FROM message_logs ml
+      LEFT JOIN donors d ON d.id = ml.donor_id
+      LEFT JOIN staff s ON s.id = ml.staff_id
+      ORDER BY ml.sent_at DESC LIMIT 5
+    `);
 
     return sendJsonResponse(res, true, 'Dashboard data', {
       total_donors,
       blood_groups,
-      recent_camps: camps
+      recent_camps: camps,
+      eligible_donors,
+      messages_today,
+      recent_messages: recentMessages
     });
   } catch (error) {
+    console.error('Dashboard error:', error);
     return sendJsonResponse(res, false, 'Internal error', {}, 500);
   }
 });
@@ -29,9 +51,12 @@ router.get('/dashboard', authMiddleware, async (req, res) => {
 // POST /api/reports/data
 router.post('/data', authMiddleware, async (req, res) => {
   try {
-    const startDate = req.body.start_date || '';
-    const endDate = req.body.end_date || '';
-    const bloodGroup = req.body.blood_group || '';
+    // Reports.vue historically nested filters under `params`; accept both
+    // shapes so a flat body or a { params: {...} } body both work.
+    const body = req.body.params && typeof req.body.params === 'object' ? req.body.params : req.body;
+    const startDate = body.start_date || '';
+    const endDate = body.end_date || '';
+    const bloodGroup = body.blood_group || '';
     
     let dateWhere = '';
     let dateParams = [];
@@ -120,47 +145,97 @@ router.get('/export', authMiddleware, async (req, res) => {
   try {
     const startDate = req.query.start_date || null;
     const endDate = req.query.end_date || null;
-    
-    let query = `
-      SELECT d.donor_name, d.mobile, d.blood_group, c.title, c.camp_date 
-      FROM camp_registrations cr
-      JOIN donors d ON cr.donor_id = d.id
-      JOIN blood_camps c ON cr.camp_id = c.id
-      WHERE cr.donation_status = 'Donated'
-    `;
-    let params = [];
-    if (startDate && endDate) {
-      query += ` AND c.camp_date BETWEEN ? AND ?`;
-      params.push(startDate, endDate);
-    }
-    query += ` ORDER BY c.camp_date DESC`;
+    const bloodGroup = req.query.blood_group || '';
+    const report = req.query.report || 'summary';
 
-    const [rows] = await pool.execute(query, params);
-    
+    let dateWhere = '';
+    let dateParams = [];
+    if (startDate) { dateWhere += ' AND c.camp_date >= ?'; dateParams.push(startDate); }
+    if (endDate) { dateWhere += ' AND c.camp_date <= ?'; dateParams.push(endDate); }
+
     const workbook = new exceljs.Workbook();
-    const worksheet = workbook.addWorksheet('Donation Report');
-    
-    worksheet.columns = [
-      { header: 'Donor Name', key: 'donor_name', width: 25 },
-      { header: 'Mobile', key: 'mobile', width: 15 },
-      { header: 'Blood Group', key: 'blood_group', width: 15 },
-      { header: 'Camp Name', key: 'title', width: 30 },
-      { header: 'Camp Date', key: 'camp_date', width: 15 },
-    ];
-    
-    rows.forEach(row => {
-      worksheet.addRow({
-        donor_name: row.donor_name,
-        mobile: row.mobile,
-        blood_group: row.blood_group,
-        title: row.title,
-        camp_date: row.camp_date ? new Date(row.camp_date).toISOString().split('T')[0] : ''
+
+    if (report === 'blood_groups') {
+      let bgWhere = '';
+      let bgParams = [];
+      if (bloodGroup) { bgWhere = ' AND blood_group = ?'; bgParams.push(bloodGroup); }
+      const [rows] = await pool.execute(
+        `SELECT blood_group, COUNT(*) AS total FROM donors WHERE status = 'Active' ${bgWhere} GROUP BY blood_group ORDER BY blood_group`,
+        bgParams
+      );
+      const sheet = workbook.addWorksheet('Blood Groups');
+      sheet.columns = [{ header: 'Blood Group', key: 'blood_group', width: 15 }, { header: 'Active Donors', key: 'total', width: 15 }];
+      rows.forEach(r => sheet.addRow(r));
+
+    } else if (report === 'messages') {
+      let msgWhere = '';
+      let msgParams = [];
+      if (startDate) { msgWhere += ' AND DATE(ml.sent_at) >= ?'; msgParams.push(startDate); }
+      if (endDate) { msgWhere += ' AND DATE(ml.sent_at) <= ?'; msgParams.push(endDate); }
+      const [rows] = await pool.execute(
+        `SELECT DATE(ml.sent_at) AS report_date, ml.message_type, COUNT(*) AS total
+         FROM message_logs ml WHERE 1=1 ${msgWhere}
+         GROUP BY DATE(ml.sent_at), ml.message_type ORDER BY report_date ASC`,
+        msgParams
+      );
+      const sheet = workbook.addWorksheet('Messages Over Time');
+      sheet.columns = [{ header: 'Date', key: 'report_date', width: 15 }, { header: 'Channel', key: 'message_type', width: 15 }, { header: 'Count', key: 'total', width: 12 }];
+      rows.forEach(r => sheet.addRow(r));
+
+    } else if (report === 'eligible') {
+      let bgWhere = '';
+      let bgParams = [];
+      if (bloodGroup) { bgWhere = ' AND blood_group = ?'; bgParams.push(bloodGroup); }
+      const [rows] = await pool.execute(
+        `SELECT donor_name, mobile, blood_group, last_donation_date, address FROM donors
+         WHERE status = 'Active' AND (last_donation_date IS NULL OR last_donation_date <= DATE_SUB(NOW(), INTERVAL 4 MONTH)) ${bgWhere}
+         ORDER BY blood_group, donor_name`,
+        bgParams
+      );
+      const sheet = workbook.addWorksheet('Eligible Donors');
+      sheet.columns = [
+        { header: 'Name', key: 'donor_name', width: 25 }, { header: 'Mobile', key: 'mobile', width: 15 },
+        { header: 'Blood Group', key: 'blood_group', width: 12 }, { header: 'Last Donation', key: 'last_donation_date', width: 15 },
+        { header: 'Address', key: 'address', width: 30 }
+      ];
+      rows.forEach(r => sheet.addRow(r));
+
+    } else {
+      // summary: donors who actually donated at a camp, with camp/date
+      let bgWhere = '';
+      let bgParams = [];
+      if (bloodGroup) { bgWhere = ' AND d.blood_group = ?'; bgParams.push(bloodGroup); }
+      const [rows] = await pool.execute(
+        `SELECT d.donor_name, d.mobile, d.blood_group, c.title, c.camp_date
+         FROM camp_registrations cr
+         JOIN donors d ON cr.donor_id = d.id
+         JOIN blood_camps c ON cr.camp_id = c.id
+         WHERE cr.status = 'Donated' ${dateWhere} ${bgWhere}
+         ORDER BY c.camp_date DESC`,
+        [...dateParams, ...bgParams]
+      );
+      const sheet = workbook.addWorksheet('Donation Report');
+      sheet.columns = [
+        { header: 'Donor Name', key: 'donor_name', width: 25 },
+        { header: 'Mobile', key: 'mobile', width: 15 },
+        { header: 'Blood Group', key: 'blood_group', width: 15 },
+        { header: 'Camp Name', key: 'title', width: 30 },
+        { header: 'Camp Date', key: 'camp_date', width: 15 },
+      ];
+      rows.forEach(row => {
+        sheet.addRow({
+          donor_name: row.donor_name,
+          mobile: row.mobile,
+          blood_group: row.blood_group,
+          title: row.title,
+          camp_date: row.camp_date ? new Date(row.camp_date).toISOString().split('T')[0] : ''
+        });
       });
-    });
-    
+    }
+
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', 'attachment; filename=Donation_Report.xlsx');
-    
+    res.setHeader('Content-Disposition', `attachment; filename=${report}_report.xlsx`);
+
     await workbook.xlsx.write(res);
     res.end();
   } catch (error) {

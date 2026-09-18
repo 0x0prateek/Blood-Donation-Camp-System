@@ -29,7 +29,12 @@ services:
     networks:
       - app-net
 
-  # ── PHP 8.2 REST API Backend ─────────────────────────────────
+  # ── Node.js 20 / Express REST API Backend ─────────────────────
+  # Messaging credentials (WhatsApp/SMS) below are read by the app from
+  # the `settings` DB table via the Settings UI, not from these env vars -
+  # they're kept here only so Railway/prod deployments have a place to
+  # seed them from the platform's variable UI if a future version reads
+  # them directly.
   backend:
     build:
       context: ./backend
@@ -45,7 +50,7 @@ services:
       APP_DEBUG: ${APP_DEBUG:-false}
       APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Colombo}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
-      # Messaging — set in .env
+      # Messaging — set in .env (currently only usable via Settings UI, see note above)
       WHATSAPP_API_TOKEN: ${WHATSAPP_API_TOKEN:-}
       WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
       WHATSAPP_API_VERSION: ${WHATSAPP_API_VERSION:-v23.0}
@@ -53,14 +58,17 @@ services:
       SMS_API_KEY: ${SMS_API_KEY:-}
       SMS_API_SECRET: ${SMS_API_SECRET:-}
       SMS_SENDER_ID: ${SMS_SENDER_ID:-}
-    volumes:
-      - ./backend:/var/www/html
-      - backend_uploads:/var/www/html/storage/uploads
     depends_on:
       db:
         condition: service_healthy
     ports:
       - "8081:80"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:80/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     networks:
       - app-net
 
@@ -75,13 +83,13 @@ services:
     ports:
       - "3000:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - app-net
 
 volumes:
   db_data:
-  backend_uploads:
 
 networks:
   app-net:

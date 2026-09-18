@@ -17,7 +17,7 @@
           </div>
           <div class="col-md-5">
             <div class="d-flex gap-2 justify-content-md-end">
-              <router-link to="/camps" class="btn btn-outline-secondary">
+              <router-link to="/admin/camps" class="btn btn-outline-secondary">
                 <i class="fas fa-campground me-1"></i> Manage Camps
               </router-link>
               <div class="btn-group">
@@ -50,7 +50,7 @@
           <i class="fas fa-campground d-block mb-3" style="font-size:2.5rem;"></i>
           <h5>No blood camps yet</h5>
           <p class="text-secondary mb-3">Create a camp first, then you can start marking donors in.</p>
-          <router-link to="/camps" class="btn btn-primary">
+          <router-link to="/admin/camps" class="btn btn-primary">
             <i class="fas fa-plus me-1"></i> Create a Camp
           </router-link>
         </div>

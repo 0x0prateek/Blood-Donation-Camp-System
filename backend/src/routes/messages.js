@@ -3,7 +3,7 @@ const router = express.Router();
 const crypto = require('crypto');
 const pool = require('../config/db');
 const authMiddleware = require('../middleware/auth');
-const { sendJsonResponse, dataTablePaging, logMessage } = require('../utils/functions');
+const { sendJsonResponse, dataTablePaging, logMessage, replacePlaceholders, formatPhoneForAPI } = require('../utils/functions');
 const { whatsAppSend, smsSend } = require('../utils/messaging');
 
 // POST /api/messages/log
@@ -12,7 +12,7 @@ router.post('/log', authMiddleware, async (req, res) => {
     const draw = parseInt(req.body.draw) || 1;
     const { start, length } = dataTablePaging(req);
     const searchValue = req.body.search?.value || '';
-    
+
     let orderColIdx = 0;
     let orderDir = 'DESC';
     if (req.body.order && req.body.order[0]) {
@@ -26,22 +26,40 @@ router.post('/log', authMiddleware, async (req, res) => {
     let queryParams = [];
 
     if (searchValue) {
-      whereClauses.push('(mobile LIKE ? OR message LIKE ?)');
+      whereClauses.push('(ml.mobile LIKE ? OR ml.message LIKE ?)');
       queryParams.push(`%${searchValue}%`, `%${searchValue}%`);
+    }
+
+    const type = req.body.type || '';
+    if (type) {
+      whereClauses.push('ml.message_type = ?');
+      queryParams.push(type);
+    }
+
+    const status = req.body.status || '';
+    if (status) {
+      whereClauses.push('ml.status = ?');
+      queryParams.push(status);
     }
 
     const whereString = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
     const [[{ total }]] = await pool.execute('SELECT COUNT(*) as total FROM message_logs');
-    const [[{ filtered }]] = await pool.execute(`SELECT COUNT(*) as filtered FROM message_logs ${whereString}`, queryParams);
+    const [[{ filtered }]] = await pool.execute(`SELECT COUNT(*) as filtered FROM message_logs ml ${whereString}`, queryParams);
 
     const [data] = await pool.execute(
-      `SELECT * FROM message_logs ${whereString} ORDER BY ${orderColumn} ${orderDir} LIMIT ? OFFSET ?`,
+      `SELECT ml.*, COALESCE(d.donor_name, s.name) AS donor_name
+       FROM message_logs ml
+       LEFT JOIN donors d ON d.id = ml.donor_id
+       LEFT JOIN staff s ON s.id = ml.staff_id
+       ${whereString}
+       ORDER BY ml.${orderColumn} ${orderDir} LIMIT ? OFFSET ?`,
       [...queryParams, length.toString(), start.toString()]
     );
 
     res.json({ draw, recordsTotal: total, recordsFiltered: filtered, data });
   } catch (error) {
+    console.error('Message log error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -53,15 +71,57 @@ const getSettings = async () => {
   return settings;
 };
 
+const getTemplate = async (templateId) => {
+  if (!templateId) return null;
+  const [rows] = await pool.execute('SELECT * FROM message_templates WHERE id = ?', [templateId]);
+  return rows[0] || null;
+};
+
+// Resolve {NAME}/{DATE}/{LOCATION}/{BLOOD_GROUP}/{MESSAGE} placeholders for one recipient.
+const resolvePlaceholders = (rec, req) => ({
+  NAME: rec.name || '',
+  DATE: req.body.date || '',
+  LOCATION: req.body.location || '',
+  BLOOD_GROUP: req.body.blood_group || '',
+  MESSAGE: req.body.custom_message || req.body.message || ''
+});
+
+// Build a Meta WhatsApp template payload, mapping the template's named
+// variable order (e.g. "NAME,DATE,LOCATION") onto {{1}},{{2}},... in order.
+const buildTemplatePayload = (to, template, values) => {
+  const varNames = (template.whatsapp_variables || '').split(',').map(v => v.trim()).filter(Boolean);
+  const parameters = varNames.map(name => ({
+    type: 'text',
+    text: (values[name] !== undefined && values[name] !== '') ? String(values[name]) : '-'
+  }));
+
+  const components = parameters.length > 0 ? [{ type: 'body', parameters }] : [];
+
+  return {
+    messaging_product: 'whatsapp',
+    to,
+    type: 'template',
+    template: {
+      name: template.whatsapp_template_name,
+      language: { code: template.whatsapp_language || 'en' },
+      components
+    }
+  };
+};
+
 // Common chunked sending logic for both SMS and WhatsApp
 const processSending = async (req, res, type) => {
   try {
-    const target = req.body.target;
+    // Messages.vue/Emergency.vue send `recipient_type`; accept `target` too.
+    const rawTarget = req.body.target || req.body.recipient_type;
+    const targetMap = { all: 'all_donors', all_donors: 'all_donors', blood_group: 'blood_group', staff: 'staff', selected: 'selected_donors', selected_donors: 'selected_donors', test: 'test' };
+    const target = targetMap[rawTarget] || rawTarget;
+
     let campaign_id = req.body.campaign_id;
     const offset = parseInt(req.body.offset) || 0;
     const chunk = parseInt(req.body.chunk) || 40;
 
-    let messageBody = req.body.message;
+    const sendMode = req.body.send_mode || 'template'; // 'template' | 'text'
     let templateId = req.body.template_id;
 
     if (!campaign_id) {
@@ -80,6 +140,13 @@ const processSending = async (req, res, type) => {
       const camp = req.body.camp_id;
       const [rows] = await pool.execute('SELECT donor_id as id, mobile, donor_name as name FROM camp_registrations WHERE camp_id = ? AND donor_id IS NOT NULL', [camp]);
       recipients = rows;
+    } else if (target === 'selected_donors') {
+      const ids = (req.body.donor_ids || []).map(id => parseInt(id)).filter(Boolean);
+      if (ids.length > 0) {
+        const placeholders = ids.map(() => '?').join(',');
+        const [rows] = await pool.execute(`SELECT id, mobile, donor_name as name FROM donors WHERE id IN (${placeholders})`, ids);
+        recipients = rows;
+      }
     } else if (target === 'staff') {
       const [rows] = await pool.execute('SELECT id, mobile, name FROM staff WHERE status = "Active"');
       recipients = rows.map(r => ({ ...r, is_staff: true }));
@@ -93,8 +160,17 @@ const processSending = async (req, res, type) => {
     const slice = recipients.slice(offset, offset + chunk);
     const settings = await getSettings();
 
+    let template = null;
+    if (type === 'WhatsApp' && sendMode === 'template') {
+      template = await getTemplate(templateId);
+      if (!template || !template.whatsapp_template_name) {
+        return sendJsonResponse(res, false, 'Selected template has no WhatsApp template name configured. Set it on the Templates page first.', {}, 400);
+      }
+    }
+
     let sent = 0;
     let failed = 0;
+    let skipped = 0;
 
     for (const rec of slice) {
       // Check if already sent in this campaign
@@ -104,31 +180,21 @@ const processSending = async (req, res, type) => {
           `SELECT id FROM message_logs WHERE campaign_id = ? AND ${idCol} = ? AND status = 'Sent'`,
           [campaign_id, rec.id]
         );
-        if (existing.length > 0) continue; // Skip already sent
+        if (existing.length > 0) { skipped++; continue; }
       }
 
-      let text = messageBody.replace('{NAME}', rec.name);
+      const values = resolvePlaceholders(rec, req);
+      const text = replacePlaceholders(req.body.message || template?.template_body || '', values);
       let result;
 
       if (type === 'WhatsApp') {
-        const payload = {
-          messaging_product: 'whatsapp',
-          to: rec.mobile.replace('0', '94'), // simple formatting for lk
-          type: 'template',
-          template: {
-            name: req.body.whatsapp_template_name,
-            language: { code: req.body.whatsapp_language || 'en' },
-            components: [
-              {
-                type: 'body',
-                parameters: [
-                  { type: 'text', text: rec.name }
-                  // Add more parameters dynamically based on template config if needed
-                ]
-              }
-            ]
-          }
-        };
+        const to = formatPhoneForAPI(rec.mobile).replace('+', '');
+        let payload;
+        if (sendMode === 'template' && template) {
+          payload = buildTemplatePayload(to, template, values);
+        } else {
+          payload = { messaging_product: 'whatsapp', to, type: 'text', text: { body: text } };
+        }
         result = await whatsAppSend(payload, settings);
       } else {
         result = await smsSend(rec.mobile, text, settings);
@@ -153,6 +219,8 @@ const processSending = async (req, res, type) => {
         processed,
         sent,
         failed,
+        skipped,
+        pending: total - processed,
         done,
         next_offset: done ? null : processed
       }

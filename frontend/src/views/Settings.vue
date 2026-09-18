@@ -313,8 +313,8 @@ const loadAccount = async () => {
   try {
     const response = await api.get('/auth/me')
     if (response.data && response.data.success) {
-      account.value.name = response.data.data.name
-      account.value.email = response.data.data.email
+      account.value.name = response.data.data.user.name
+      account.value.email = response.data.data.user.email
     }
   } catch (error) {
     // optional endpoint

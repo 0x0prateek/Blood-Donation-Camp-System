@@ -273,7 +273,12 @@ onMounted(async () => {
 
 async function fetchHistory() {
   try {
-    const res = await api.post('/messages/log', historyFilter.value )
+    const res = await api.post('/messages/log', {
+      draw: 1, start: 0, length: 100,
+      type: historyFilter.type,
+      status: historyFilter.status,
+      order: [{ column: 4, dir: 'desc' }]
+    })
     historyLogs.value = res.data.data || []
   } catch (err) {
     console.error('Failed to load history:', err)

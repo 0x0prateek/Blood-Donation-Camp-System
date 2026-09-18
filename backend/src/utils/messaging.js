@@ -114,27 +114,87 @@ const sendNotifySms = async (phone, message, userId, apiKey, senderId) => {
   }
 };
 
+const sendTwilioSms = async (phone, message, accountSid, authToken, fromNumber) => {
+  if (!accountSid || !authToken || !fromNumber) {
+    return {
+      ok: false,
+      status: 'Failed',
+      detail: 'Twilio credentials not configured.',
+      raw: '',
+      http: 0,
+      gateway: 'Twilio'
+    };
+  }
+
+  const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+  const body = new URLSearchParams({ To: phone, From: fromNumber, Body: message });
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Basic ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64'),
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body
+    });
+
+    const data = await response.text();
+    let parsed = {};
+    try { parsed = JSON.parse(data); } catch (e) {}
+
+    const ok = response.ok && !parsed.error_code;
+
+    return {
+      ok,
+      status: ok ? 'Sent' : 'Failed',
+      detail: ok ? 'Message sent' : (parsed.message || `HTTP ${response.status}`),
+      raw: data,
+      http: response.status,
+      gateway: 'Twilio'
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      status: 'Failed',
+      detail: error.message,
+      raw: error.toString(),
+      http: 0,
+      gateway: 'Twilio'
+    };
+  }
+};
+
 const smsSend = async (phone, message, settings) => {
-  const gateway = settings.sms_gateway || 'notify'; // notify or twilio, assuming notify based on args
+  const gateway = settings.sms_gateway || 'notify';
 
   if (gateway === 'notify') {
     return sendNotifySms(
       phone,
       message,
-      settings.sms_api_key,    // mapped to user_id in php
-      settings.sms_api_secret, // mapped to api_key in php
+      settings.sms_api_key,    // Notify.lk user_id
+      settings.sms_api_secret, // Notify.lk api_key
       settings.sms_sender_id
     );
   }
 
-  // Twilio implementation would go here... (simplified)
+  if (gateway === 'twilio') {
+    return sendTwilioSms(
+      phone,
+      message,
+      settings.sms_api_key,    // Twilio Account SID
+      settings.sms_api_secret, // Twilio Auth Token
+      settings.sms_sender_id   // Twilio From number
+    );
+  }
+
   return {
     ok: false,
     status: 'Failed',
-    detail: `Gateway ${gateway} not implemented in Node yet.`,
+    detail: `Gateway ${gateway} is not wired for live sends yet - contact info is stored, but no API call is made.`,
     raw: '',
     http: 0,
-    gateway: gateway
+    gateway
   };
 };
 

@@ -35,19 +35,19 @@ A full-stack Blood Donor Management System (Demo Learning Project for Students) 
 Blood-Donation-Camp-System/
 ├── backend/          ← Node.js Express API
 │   ├── src/
-│   │   ├── controllers/
-│   │   ├── middleware/
-│   │   ├── routes/
-│   │   ├── utils/
+│   │   ├── config/     ← MySQL pool (db.js)
+│   │   ├── middleware/ ← JWT auth guard
+│   │   ├── routes/     ← One file per resource (auth, donors, camps, ...)
+│   │   ├── utils/      ← functions.js, messaging.js (WhatsApp/SMS gateways)
 │   │   └── index.js
 │   ├── package.json
-│   └── Dockerfile
+│   └── Dockerfile      ← multi-stage: default + `production` target
 ├── frontend/         ← Vue 3 SPA
 │   ├── src/
-│   │   ├── views/    ← One per page
-│   │   ├── components/
-│   │   ├── stores/   ← Pinia (auth, settings)
-│   │   ├── api/      ← Axios instance
+│   │   ├── views/      ← One per page (Donors/, Camps/, Communication/, ...)
+│   │   ├── stores/     ← Pinia (auth, settings)
+│   │   ├── plugins/    ← axios.js (API client)
+│   │   ├── layouts/    ← AppLayout.vue (admin shell)
 │   │   └── router/
 │   ├── Dockerfile
 │   └── nginx.conf
@@ -55,9 +55,13 @@ Blood-Donation-Camp-System/
 ├── docker-compose.prod.yml
 ├── .env.example
 ├── railway.json
-├── database/          ← SQL initialization scripts
-│   ├── 01-setup.sql
-│   └── 02-dummy-data.sql
+├── database/          ← SQL run on first container boot, in order
+│   ├── 01-setup.sql          (schema + seed data)
+│   ├── 02-dummy-data.sql     (demo donors/camps)
+│   └── 03-more-dummy-data.sql
+├── migration-*.sql   ← Standalone migrations from the pre-rewrite PHP app;
+│                        already folded into 01-setup.sql, kept for history
+└── PPTx/             ← Project presentation deck
 ```
 
 ---
@@ -66,7 +70,9 @@ Blood-Donation-Camp-System/
 
 ### Prerequisites
 - macOS users: Install Colima to run the Docker engine: `brew install colima && colima start`
-- Podman 4+ (with `podman-compose` or `podman compose`)
+- Podman 4+, plus a compose provider: `podman compose` (built in on newer
+  Podman) or `pip install podman-compose` if you see
+  `Error: looking up compose provider failed`
 - Or Docker 24+
 
 ### 1. Clone & configure
@@ -157,30 +163,44 @@ Set `FRONTEND_URL` on the backend service to the Railway URL of your frontend se
 
 ## 🔌 API Reference
 
-All routes are prefixed `/api`. Authentication via JWT in `httpOnly` cookie set at login.
+All routes are prefixed `/api`. Authentication via JWT in an `httpOnly` cookie set at login.
+List/search endpoints use a DataTables-style contract - `POST .../list` with
+`{ draw, start, length, search: { value }, order: [{ column, dir }], ...filters }`,
+returning `{ draw, recordsTotal, recordsFiltered, data }` (plus `summary`/`by_category`
+where noted).
 
 | Method | Path | Description |
 |---|---|---|
 | POST | `/api/auth/login` | Login |
 | POST | `/api/auth/logout` | Logout |
 | GET | `/api/auth/me` | Current user |
-| GET | `/api/dashboard` | Dashboard stats |
-| GET | `/api/donors` | Paginated donor list |
-| POST | `/api/donors` | Create donor |
-| GET | `/api/donors/{id}` | Get donor |
-| PUT | `/api/donors/{id}` | Update donor |
-| DELETE | `/api/donors/{id}` | Delete donor |
+| POST | `/api/auth/account-save` | Change name/email/password (requires current password) |
+| POST | `/api/donors/list` | Paginated, searchable donor list |
+| POST | `/api/donors/save` | Create/update donor (`id` present = update) |
+| POST | `/api/donors/delete` | Delete donor |
+| POST | `/api/donors/status` | Toggle Active/Inactive |
+| GET | `/api/donors/:id` | Get one donor |
 | GET | `/api/donors/export` | Excel export |
 | POST | `/api/donors/import` | Excel import |
-| GET | `/api/camps` | Camp list |
-| GET | `/api/camps/{id}/registrations` | Camp registrations |
-| GET | `/api/camps/{id}/finance` | Finance summary |
-| POST | `/api/messages/sms` | Send SMS (chunked) |
-| POST | `/api/messages/whatsapp` | Send WhatsApp (chunked) |
-| GET | `/api/settings` | All settings |
+| GET | `/api/donors/blood-group-counts` | Active donor counts per blood group |
+| POST | `/api/camps/list` \| `/save` \| `/delete` \| `/budget-save` | Camp CRUD + budget |
+| POST | `/api/registrations/list` \| `/lookup` \| `/save` \| `/delete` | Camp register (list returns a `summary`; lookup returns donor `state`) |
+| GET | `/api/registrations/export` | Register export (xlsx/csv) |
+| POST | `/api/finance/contributions/list` \| `/save` \| `/delete` | Camp donations (list returns `summary` + `by_category`) |
+| POST | `/api/finance/expenses/list` \| `/save` \| `/delete` | Camp expenses (list returns `summary` + `by_category`) |
+| GET | `/api/finance/export` | Finance export (xlsx 3-sheet, or csv per `section`) |
+| POST | `/api/staff/list` \| `/save` \| `/delete` | Organising-committee CRUD |
+| POST | `/api/templates/list` \| `/save` \| `/delete` \| `/sync` | Message templates (`/sync` pulls approved templates from Meta) |
+| POST | `/api/messages/send-whatsapp` \| `/send-sms` | Chunked bulk send (call repeatedly with `offset` until `done`) |
+| POST | `/api/messages/log` | Message history |
+| GET | `/api/settings/load` | All settings |
+| POST | `/api/settings/save` | Save settings, or run a test send (`action: 'test_whatsapp'\|'test_sms'`) |
+| GET | `/api/reports/dashboard` | Dashboard stats |
+| POST | `/api/reports/data` | Filtered report data |
+| GET | `/api/reports/export` | Report export (`report=summary\|blood_groups\|messages\|eligible`) |
 | GET | `/api/health` | Health check |
 
-See the source for the full route list.
+See the source under `backend/src/routes/` for the full, current route list.
 
 ---
 

@@ -28,6 +28,12 @@ router.post('/list', authMiddleware, async (req, res) => {
       queryParams.push(`%${searchValue}%`, `%${searchValue}%`);
     }
 
+    const status = req.body.status || '';
+    if (status && ['Active', 'Inactive'].includes(status)) {
+      whereClauses.push('status = ?');
+      queryParams.push(status);
+    }
+
     const whereString = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
     const [[{ total }]] = await pool.execute('SELECT COUNT(*) as total FROM staff');

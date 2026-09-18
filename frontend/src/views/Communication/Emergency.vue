@@ -129,7 +129,7 @@ onMounted(async () => {
   try {
     const [countsRes, tplRes] = await Promise.all([
       api.get('/donors/blood-group-counts').catch(() => ({ data: { data: {} } })),
-      api.get('/templates?type=Emergency+Request').catch(() => ({ data: { data: [] } }))
+      api.post('/templates/list', { filter: 'Emergency Request' }).catch(() => ({ data: { data: [] } }))
     ])
     
     // Ensure we have 0 for empty ones

@@ -39,6 +39,20 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// 404 for unmatched API routes
+app.use('/api', (req, res) => {
+  res.status(404).json({ success: false, message: 'Not found' });
+});
+
+// Last-resort error handler: never leak stack traces to the client.
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  if (process.env.APP_DEBUG === 'true') {
+    return res.status(500).json({ success: false, message: err.message, stack: err.stack });
+  }
+  res.status(500).json({ success: false, message: 'Internal server error' });
+});
+
 const PORT = process.env.PORT || 80;
 
 app.listen(PORT, () => {

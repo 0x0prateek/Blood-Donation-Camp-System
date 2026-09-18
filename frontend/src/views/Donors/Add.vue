@@ -5,7 +5,7 @@
         <div class="card shadow-sm">
           <div class="card-header bg-white d-flex align-items-center justify-content-between py-3">
             <h5 class="mb-0"><i class="fas fa-user-plus me-2 text-primary"></i> Add New Donor</h5>
-            <router-link to="/donors" class="btn btn-outline-secondary btn-sm">
+            <router-link to="/admin/donors" class="btn btn-outline-secondary btn-sm">
               <i class="fas fa-arrow-left me-1"></i> Back
             </router-link>
           </div>
@@ -104,7 +104,7 @@
               <hr class="my-4">
 
               <div class="d-flex gap-2 justify-content-end">
-                <router-link to="/donors" class="btn btn-outline-secondary">Cancel</router-link>
+                <router-link to="/admin/donors" class="btn btn-outline-secondary">Cancel</router-link>
                 <button type="submit" class="btn btn-primary" :disabled="saving">
                   <i class="fas fa-spinner fa-spin me-1" v-if="saving"></i>
                   <i class="fas fa-save me-1" v-else></i> Save Donor

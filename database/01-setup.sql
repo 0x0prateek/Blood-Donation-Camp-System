@@ -272,24 +272,13 @@ ALTER TABLE `camp_registrations` ADD INDEX `idx_reg_mobile` (`mobile`);
 
 -- Default admin account.
 --
--- The password below is a LOCKED placeholder, not a usable bcrypt hash:
--- password_verify() returns false for it, so a fresh install ships with no
--- working login. This is deliberate. Earlier versions seeded a real hash of
--- a weak password and documented it in this file, which meant every install
--- that forgot to change it had a publicly known admin account - on a system
--- holding donor names, phone numbers and blood groups.
---
--- Set a password before first login. Run this from the project root and type
--- the password when it waits for input (reading from stdin keeps it out of
--- your shell history):
---
---   php -r "echo password_hash(trim(fgets(STDIN)), PASSWORD_DEFAULT), PHP_EOL;"
---
--- Then apply the hash it prints:
---
---   UPDATE admins SET password = '<paste-the-hash>' WHERE email = 'admin@admin.com';
---
--- After signing in, set your own email and password on Settings > Admin Account.
+-- This is a DEMO/LEARNING project (see README) and the hash below is a
+-- real, working bcrypt hash for the password documented in cred.txt at the
+-- repo root - admin@admin.com / password123 - kept intentionally simple so
+-- students can log in immediately. This is a publicly known credential.
+-- Before any real, non-demo deployment: sign in, then set a new email and
+-- a strong password from Settings > Admin Account (requires the current
+-- password, see auth.js /account-save).
 INSERT INTO `admins` (`name`, `email`, `password`) VALUES
 ('Administrator', 'admin@admin.com', '$2b$10$5j78HUlYxqySs27KMBC3wu5vA346LWNDzBrC0566I3TeUAdz0ws2W');
 
@@ -298,6 +287,13 @@ INSERT INTO `message_templates` (`template_name`, `template_body`, `template_typ
 ('Blood Camp Notification', 'Hello {NAME},\n\nOur upcoming blood donation camp will be held on:\n\nDate: {DATE}\nLocation: {LOCATION}\n\nWe would be grateful for your participation.\n\nThank you.', 'Camp Notification', 'blood_camp_notification', 'en', 'NAME,DATE,LOCATION'),
 ('Emergency Blood Request', 'Urgent Blood Request\n\nBlood Group: {BLOOD_GROUP}\nLocation: {LOCATION}\n\nPlease contact us immediately if you can donate.\n\nThank you.', 'Emergency Request', 'emergency_blood_request', 'en', 'BLOOD_GROUP,LOCATION'),
 ('General Announcement', 'Hello {NAME},\n\n{MESSAGE}\n\nThank you.', 'General', 'general_announcement', 'en', 'NAME,MESSAGE');
+
+-- Sinhala versions, alongside the English ones (same Meta template name,
+-- different language, per WhatsApp Manager's per-language approval model).
+INSERT INTO `message_templates` (`template_name`, `template_body`, `template_type`, `whatsapp_template_name`, `whatsapp_language`, `whatsapp_variables`) VALUES
+('Blood Camp Notification (Sinhala)', 'ආයුබෝවන් {NAME},\n\nඅපගේ මීළඟ රුධිර දන්දීමේ කඳවුර පහත පරිදි පැවැත්වේ.\n\nදිනය: {DATE}\nස්ථානය: {LOCATION}\n\nඔබගේ සහභාගීත්වය අපි බෙහෙවින් අගය කරමු.\n\nස්තූතියි.', 'Camp Notification', 'blood_camp_notification', 'si', 'NAME,DATE,LOCATION'),
+('Emergency Blood Request (Sinhala)', 'හදිසි රුධිර අවශ්‍යතාවයකි\n\nරුධිර කාණ්ඩය: {BLOOD_GROUP}\nස්ථානය: {LOCATION}\n\nඔබට රුධිර පරිත්‍යාග කළ හැකි නම්, කරුණාකර වහාම අප හා සම්බන්ධ වන්න.\n\nස්තූතියි.', 'Emergency Request', 'emergency_blood_request', 'si', 'BLOOD_GROUP,LOCATION'),
+('General Announcement (Sinhala)', 'ආයුබෝවන් {NAME},\n\n{MESSAGE}\n\nස්තූතියි.', 'General', 'general_announcement', 'si', 'NAME,MESSAGE');
 
 -- Default settings
 INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES

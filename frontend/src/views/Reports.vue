@@ -233,10 +233,7 @@ const reportData = ref({
 
 const loadReports = async () => {
   try {
-    // If exact endpoint doesn't exist yet, we catch error gracefully
-    // Usually we would use api.post('/reports/data', { params: filters.value })
-    // Since original PHP used POST to `/ajax/report-data.php`, we might assume GET `/reports/data` for REST
-    const response = await api.post('/reports/data', { params: filters.value })
+    const response = await api.post('/reports/data', filters.value)
     if (response.data && response.data.success) {
       reportData.value = {
         summary: response.data.data.summary || { total_donors: 0, eligible_donors: 0, messages_sent: 0, upcoming_camps: 0 },

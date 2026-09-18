@@ -10,7 +10,7 @@ export const useAuthStore = defineStore('auth', {
     async login(credentials) {
       try {
         const response = await api.post('/auth/login', credentials)
-        this.user = response.data.user
+        this.user = response.data.data?.user || null
         this.isAuthenticated = true
         return response.data
       } catch (error) {
@@ -29,11 +29,12 @@ export const useAuthStore = defineStore('auth', {
     async checkAuth() {
       try {
         const response = await api.get('/auth/me')
-        this.user = response.data.user
+        this.user = response.data.data?.user || null
         this.isAuthenticated = true
       } catch (error) {
         this.user = null
         this.isAuthenticated = false
+        throw error
       }
     }
   }

@@ -23,7 +23,7 @@
 
         <div class="nav-section">
           <span class="nav-section-title">Management</span>
-          <router-link to="/admin/donors" class="nav-link" active-class="active" :class="{ 'active': $route.path.startsWith('/donors') }">
+          <router-link to="/admin/donors" class="nav-link" active-class="active">
             <i class="fas fa-users"></i>
             <span>Donors</span>
           </router-link>
@@ -31,7 +31,7 @@
             <i class="fas fa-users-gear"></i>
             <span>Staff</span>
           </router-link>
-          <router-link to="/admin/camps" class="nav-link" active-class="active" :class="{ 'active': $route.path === '/camps' }">
+          <router-link to="/admin/camps" class="nav-link" active-class="active">
             <i class="fas fa-campground"></i>
             <span>Blood Camps</span>
           </router-link>
@@ -115,7 +115,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useSettingsStore } from '../stores/settings'
@@ -130,6 +130,10 @@ const isSidebarOpen = ref(false)
 const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value
 }
+
+onMounted(() => {
+  settingsStore.fetchSettings()
+})
 
 const logout = async () => {
   await authStore.logout()

@@ -5,23 +5,35 @@ const pool = require('../config/db');
 const authMiddleware = require('../middleware/auth');
 const { sendJsonResponse, sanitize, dataTablePaging, normalizeMobile } = require('../utils/functions');
 
+const REG_STATUSES = ['Registered', 'Donated', 'Rejected', 'No Show'];
+
+const getRegistrationSummary = async (camp_id) => {
+  const [rows] = await pool.execute(
+    'SELECT status, COUNT(*) AS total FROM camp_registrations WHERE camp_id = ? GROUP BY status',
+    [camp_id]
+  );
+  const summary = { Registered: 0, Donated: 0, Rejected: 0, 'No Show': 0 };
+  rows.forEach(r => { summary[r.status] = r.total; });
+  return summary;
+};
+
 // POST /api/registrations/list
 router.post('/list', authMiddleware, async (req, res) => {
   try {
     const draw = parseInt(req.body.draw) || 1;
     const { start, length } = dataTablePaging(req);
     const searchValue = sanitize(req.body.search?.value || '');
-    
+
     let orderColIdx = 0;
     let orderDir = 'ASC';
     if (req.body.order && req.body.order[0]) {
        orderColIdx = parseInt(req.body.order[0].column) || 0;
        orderDir = (req.body.order[0].dir || 'asc').toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
     }
-    
+
     const columns = ['serial_no', 'mobile', 'donor_name', 'blood_group', 'status', 'id'];
     const orderColumn = columns[orderColIdx] || 'serial_no';
-    
+
     const camp_id = parseInt(req.body.camp_id);
     if (!camp_id) return res.json({ draw, recordsTotal: 0, recordsFiltered: 0, data: [] });
 
@@ -36,10 +48,17 @@ router.post('/list', authMiddleware, async (req, res) => {
       queryParams.push(sp, sp, sp, sp);
     }
 
-    const filter = req.body.filter || '';
-    if (filter && filter !== 'all') {
+    // Register.vue sends `status`; keep `filter` too for backward compatibility.
+    const status = req.body.status || req.body.filter || '';
+    if (status && status !== 'all' && REG_STATUSES.includes(status)) {
       whereClauses.push('status = ?');
-      queryParams.push(filter);
+      queryParams.push(status);
+    }
+
+    const bloodGroup = req.body.blood_group || '';
+    if (bloodGroup) {
+      whereClauses.push('blood_group = ?');
+      queryParams.push(bloodGroup);
     }
 
     const whereString = `WHERE ${whereClauses.join(' AND ')}`;
@@ -52,11 +71,14 @@ router.post('/list', authMiddleware, async (req, res) => {
       [...queryParams, length.toString(), start.toString()]
     );
 
+    const summary = await getRegistrationSummary(camp_id);
+
     res.json({
       draw,
       recordsTotal: total,
       recordsFiltered: filtered,
-      data
+      data,
+      summary
     });
   } catch (error) {
     console.error('Registration list error:', error);
@@ -66,16 +88,43 @@ router.post('/list', authMiddleware, async (req, res) => {
 
 // POST /api/registrations/lookup
 router.post('/lookup', authMiddleware, async (req, res) => {
+  const camp_id = parseInt(req.body.camp_id);
   const mobile = normalizeMobile(sanitize(req.body.mobile || ''));
   if (!mobile) return sendJsonResponse(res, false, 'Mobile number required');
+  if (!camp_id) return sendJsonResponse(res, false, 'Camp required');
 
   try {
+    // Already on this camp's register?
+    const [existing] = await pool.execute(
+      'SELECT * FROM camp_registrations WHERE camp_id = ? AND mobile = ? LIMIT 1',
+      [camp_id, mobile]
+    );
+    if (existing.length > 0) {
+      return sendJsonResponse(res, true, 'Already registered', {
+        state: 'already_registered',
+        mobile,
+        registration: existing[0]
+      });
+    }
+
+    // Known donor elsewhere in the system?
     const [donors] = await pool.execute('SELECT * FROM donors WHERE mobile = ? LIMIT 1', [mobile]);
     if (donors.length > 0) {
-      return sendJsonResponse(res, true, 'Donor found', { donor: donors[0] });
+      const [[{ donation_count }]] = await pool.execute(
+        "SELECT COUNT(*) AS donation_count FROM camp_registrations WHERE donor_id = ? AND status = 'Donated'",
+        [donors[0].id]
+      );
+      return sendJsonResponse(res, true, 'Donor found', {
+        state: 'known_donor',
+        mobile,
+        donor: donors[0],
+        donation_count
+      });
     }
-    return sendJsonResponse(res, false, 'New donor');
+
+    return sendJsonResponse(res, true, 'New donor', { state: 'new_donor', mobile });
   } catch (error) {
+    console.error('Registration lookup error:', error);
     return sendJsonResponse(res, false, 'Internal server error');
   }
 });
@@ -177,14 +226,32 @@ router.get('/export', authMiddleware, async (req, res) => {
 
     let query = 'SELECT * FROM camp_registrations WHERE camp_id = ?';
     let params = [camp_id];
-    const filter = req.query.filter || '';
-    if (filter && filter !== 'all') {
+    // Register.vue sends `status`; keep `filter` too for backward compatibility.
+    const filter = req.query.status || req.query.filter || '';
+    if (filter && filter !== 'all' && REG_STATUSES.includes(filter)) {
       query += ' AND status = ?';
       params.push(filter);
     }
     query += ' ORDER BY serial_no ASC';
 
     const [regs] = await pool.execute(query, params);
+    const format = (req.query.format || 'xlsx').toLowerCase();
+
+    if (format === 'csv') {
+      const esc = (v) => {
+        const s = v === null || v === undefined ? '' : String(v);
+        return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      };
+      const headers = ['Serial No', 'Name', 'Mobile', 'Blood Group', 'Gender', 'DOB', 'Status', 'Remarks'];
+      const keys = ['serial_no', 'donor_name', 'mobile', 'blood_group', 'gender', 'date_of_birth', 'status', 'remarks'];
+      const lines = [headers.map(esc).join(',')];
+      regs.forEach(r => lines.push(keys.map(k => esc(r[k])).join(',')));
+      const csv = '﻿' + lines.join('\r\n');
+
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="registrations_${camp_id}.csv"`);
+      return res.send(csv);
+    }
 
     const workbook = new exceljs.Workbook();
     const worksheet = workbook.addWorksheet('Registrations');
