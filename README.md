@@ -117,6 +117,15 @@ npm install
 npm run dev
 ```
 
+### Existing database upgrade
+
+If the database was created before the donor portal was added, apply the user
+portal migration before using donor registration or blood inquiries:
+
+```bat
+mysql -u root -p blood_donor_system < migration-user-portal.sql
+```
+
 ---
 
 ## 🚂 Deploy to Railway.app

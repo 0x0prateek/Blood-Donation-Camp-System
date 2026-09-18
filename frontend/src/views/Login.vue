@@ -65,19 +65,19 @@
           <form @submit.prevent="handleSignup" class="row g-3">
             <div class="col-md-6">
               <label class="form-label">Full name</label>
-              <input v-model="form.name" class="form-control custom-input" required />
+              <input v-model="form.name" class="form-control custom-input" autocomplete="name" required />
             </div>
             <div class="col-md-6">
               <label class="form-label">Username</label>
-              <input v-model="form.username" class="form-control custom-input" required />
+              <input v-model="form.username" class="form-control custom-input" autocomplete="username" required />
             </div>
             <div class="col-md-6">
               <label class="form-label">Email</label>
-              <input v-model="form.email" type="email" class="form-control custom-input" required />
+              <input v-model="form.email" type="email" class="form-control custom-input" autocomplete="email" required />
             </div>
             <div class="col-md-6">
               <label class="form-label">Mobile</label>
-              <input v-model="form.mobile" class="form-control custom-input" required />
+              <input v-model="form.mobile" class="form-control custom-input" autocomplete="tel" required />
             </div>
             <div class="col-md-6">
               <label class="form-label">Blood group</label>
@@ -94,11 +94,11 @@
             </div>
             <div class="col-md-6">
               <label class="form-label">Password</label>
-              <input v-model="form.password" type="password" class="form-control custom-input" required />
+              <input v-model="form.password" type="password" class="form-control custom-input" autocomplete="new-password" required />
             </div>
             <div class="col-12">
               <label class="form-label">Confirm password</label>
-              <input v-model="form.confirm_password" type="password" class="form-control custom-input" required />
+              <input v-model="form.confirm_password" type="password" class="form-control custom-input" autocomplete="new-password" required />
             </div>
             <div v-if="error" class="col-12 alert alert-danger py-2 rounded-3 border-0 shadow-sm animate-shake">
               <i class="bi bi-exclamation-circle-fill me-2"></i> {{ error }}
