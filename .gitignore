@@ -6,6 +6,7 @@ config.local.php
 # .env holds real credentials — git-ignored, use .env.example as template
 .env.local
 .env.*.local
+.env.railway
 
 # ── Composer ─────────────────────────────────────────────────
 composer.phar
