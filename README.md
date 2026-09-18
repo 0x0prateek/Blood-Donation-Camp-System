@@ -169,6 +169,37 @@ mysql -u root -p blood_donor_system < database/05-demo-portal-data.sql
 The seed creates 120 portal users and 120 specific blood-group requests for
 admin workflow testing. Every seeded portal user uses `password123`.
 
+### Sync the exact local Docker database to Railway
+
+The currently verified local Docker database contains 1 admin, 124 users, 25
+donors, 6 camps, 18 registrations, and 120 blood requests. To copy that exact
+database to Railway, export it from the running container:
+
+```bash
+docker exec blood-donation-camp-system-db-1 \
+  mariadb-dump -upmaru -pbloodpass \
+  --single-transaction --routines --triggers blood_donor_system \
+  > railway-local.sql
+```
+
+Import the dump into the Railway MySQL service using a temporary MySQL client
+container. Replace the values with the Railway MySQL service credentials:
+
+```bash
+docker run --rm -i \
+  -e MYSQL_HOST='YOUR_MYSQLHOST' \
+  -e MYSQL_PORT='YOUR_MYSQLPORT' \
+  -e MYSQL_USER='YOUR_MYSQLUSER' \
+  -e MYSQL_PASSWORD='YOUR_MYSQLPASSWORD' \
+  -e MYSQL_DATABASE='YOUR_MYSQLDATABASE' \
+  mysql:8.4 sh -c \
+  'mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' \
+  < railway-local.sql
+```
+
+Delete `railway-local.sql` after import. Do not run this against a database
+containing production data without taking a backup first.
+
 ---
 
 ## 🚂 Deploy to Railway.app
