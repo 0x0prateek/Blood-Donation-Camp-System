@@ -76,7 +76,7 @@ const donorStatus = computed(() => ({
 const fetchData = async () => {
   try {
     const [camps, requests] = await Promise.all([
-      api.get('/camps/list', { data: { draw: 1, start: 0, length: 5, filter: 'upcoming' } }),
+      api.post('/camps/list', { draw: 1, start: 0, length: 5, filter: 'upcoming' }),
       api.get('/blood-requests/list')
     ])
     upcomingCamps.value = camps.data?.data || []
