@@ -102,6 +102,39 @@ docker compose up --build
 | Backend API | http://localhost:8081/api |
 | Database | localhost:3306 |
 
+### Port configuration
+
+For local Docker Compose, use these ports:
+
+| Component | Container port | Local URL |
+|---|---:|---|
+| Frontend | 80 | `http://localhost:3000` |
+| Backend API | 80 | `http://localhost:8081/api` |
+| MariaDB | 3306 | internal Compose network |
+
+For Railway, configure the frontend service's public networking target to the
+runtime `PORT` assigned by Railway. Do not hardcode port `3000` in the Docker
+image. The frontend container now listens on `${PORT}`; Railway injects that
+value automatically, while Compose sets `PORT=80`. The public frontend URL is
+the generated Railway domain, for example `https://dotlife.up.railway.app`.
+
+Set the frontend Railway variable to the backend's public API URL:
+
+```env
+VITE_API_BASE=https://your-backend-service.up.railway.app/api
+```
+
+This variable is required when the frontend and backend are separate Railway
+services. If the frontend uses relative `/api` requests instead, set
+`BACKEND_HOST` to the backend service's Railway private hostname. The default
+`BACKEND_HOST=localhost` only keeps a standalone frontend container bootable.
+
+Set the backend Railway variable to the frontend URL for CORS:
+
+```env
+FRONTEND_URL=https://dotlife.up.railway.app
+```
+
 
 **Start the Backend:**
 ```bash
@@ -153,9 +186,11 @@ Create three Railway services in the same project:
 3. Create a frontend service with root directory `frontend/`. Its service
   config is [frontend/railway.json](frontend/railway.json) and its Dockerfile
   is `frontend/Dockerfile`.
-4. Set the frontend variable `VITE_API_BASE` to the public backend URL plus
+4. Set the frontend public networking target to Railway's assigned `PORT`.
+  The image accepts the injected port automatically.
+5. Set the frontend variable `VITE_API_BASE` to the public backend URL plus
   `/api`, for example `https://dotlife-api.up.railway.app/api`.
-5. Set the backend variable `FRONTEND_URL` to the public frontend URL.
+6. Set the backend variable `FRONTEND_URL` to the public frontend URL.
 
 Railway builds the services independently. The root deployment is the backend
 API; the frontend deployment uses `VITE_API_BASE`
