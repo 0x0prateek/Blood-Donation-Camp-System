@@ -17,6 +17,10 @@ export const useAuthStore = defineStore('auth', {
         throw error
       }
     },
+    async signup(details) {
+      const response = await api.post('/auth/signup', details)
+      return response.data
+    },
     async logout() {
       try {
         await api.post('/auth/logout')

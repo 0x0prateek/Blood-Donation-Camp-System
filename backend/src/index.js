@@ -24,9 +24,11 @@ const settingRoutes = require('./routes/settings');
 const messageRoutes = require('./routes/messages');
 const reportRoutes = require('./routes/reports');
 const publicRoutes = require('./routes/public');
+const bloodRequestRoutes = require('./routes/bloodRequests');
 
 app.use('/api/public', publicRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/blood-requests', bloodRequestRoutes);
 app.use('/api/donors', donorRoutes);
 app.use('/api/camps', campRoutes);
 app.use('/api/registrations', registrationRoutes);

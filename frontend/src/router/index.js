@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import AppLayout from '../layouts/AppLayout.vue'
+import UserLayout from '../views/UserLayout.vue'
 
 const routes = [
   {
@@ -14,6 +15,35 @@ const routes = [
     name: 'Login',
     component: () => import('../views/Login.vue'),
     meta: { requiresAuth: false, title: 'Login' }
+  },
+  {
+    path: '/admin/login',
+    name: 'AdminLogin',
+    component: () => import('../views/Login.vue'),
+    meta: { requiresAuth: false, title: 'Organiser Login' }
+  },
+  {
+    path: '/donor/login',
+    name: 'DonorLogin',
+    component: () => import('../views/Login.vue'),
+    meta: { requiresAuth: false, title: 'Donor Login' }
+  },
+  {
+    path: '/donor/register',
+    name: 'DonorRegister',
+    component: () => import('../views/Login.vue'),
+    meta: { requiresAuth: false, title: 'Donor Registration' }
+  },
+  {
+    path: '/user',
+    component: UserLayout,
+    meta: { requiresAuth: true },
+    children: [
+      { path: '', redirect: '/user/dashboard' },
+      { path: 'dashboard', name: 'UserDashboard', component: () => import('../views/UserDashboard.vue'), meta: { title: 'Donor Dashboard' } },
+      { path: 'blood-request', name: 'UserBloodRequest', component: () => import('../views/UserBloodRequest.vue'), meta: { title: 'Blood Inquiry' } },
+      { path: 'profile', name: 'UserProfile', component: () => import('../views/UserProfile.vue'), meta: { title: 'My Profile' } }
+    ]
   },
   {
     path: '/admin',

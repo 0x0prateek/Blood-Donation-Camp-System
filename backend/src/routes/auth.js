@@ -4,7 +4,8 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
 const authMiddleware = require('../middleware/auth');
-const { sendJsonResponse, sanitize } = require('../utils/functions');
+const { sendJsonResponse, sanitize, normalizeMobile } = require('../utils/functions');
+const { getAuthTable, normalizeRole } = require('../utils/authRoles');
 
 const MAX_ATTEMPTS_PER_EMAIL = 5;
 const MAX_ATTEMPTS_PER_IP = 20;
@@ -35,42 +36,57 @@ const isLockedOut = async (email, ip) => {
 
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
-  const email = sanitize(req.body.email || '');
+  const roleInput = normalizeRole(req.body.role || 'admin');
+  const loginValue = sanitize(req.body.email || req.body.username || req.body.login || '');
   const password = req.body.password || '';
   const ip = req.ip || req.socket?.remoteAddress || '';
 
-  if (!email || !password) {
-    return sendJsonResponse(res, false, 'Email and password are required', {}, 400);
+  if (!loginValue || !password) {
+    return sendJsonResponse(res, false, 'Email/username and password are required', {}, 400);
   }
 
   try {
-    if (await isLockedOut(email, ip)) {
+    if (await isLockedOut(loginValue, ip)) {
       return sendJsonResponse(res, false, `Too many failed attempts. Try again in ${THROTTLE_WINDOW_MINUTES} minutes.`, {}, 429);
     }
 
-    const [rows] = await pool.execute('SELECT * FROM admins WHERE email = ?', [email]);
+    const table = getAuthTable(roleInput);
+    const query = table === 'admins'
+      ? 'SELECT * FROM admins WHERE email = ?'
+      : 'SELECT * FROM users WHERE email = ? OR username = ? ORDER BY id LIMIT 1';
+    const params = table === 'admins' ? [loginValue] : [loginValue, loginValue];
+    const [rows] = await pool.execute(query, params);
+
     if (rows.length === 0) {
-      await recordAttempt(email, ip, false);
-      return sendJsonResponse(res, false, 'Invalid email or password', {}, 401);
+      await recordAttempt(loginValue, ip, false);
+      return sendJsonResponse(res, false, 'Invalid credentials', {}, 401);
     }
 
-    const admin = rows[0];
-    const match = await bcrypt.compare(password, admin.password);
-
+    const account = rows[0];
+    const match = await bcrypt.compare(password, account.password);
     if (!match) {
-      await recordAttempt(email, ip, false);
-      return sendJsonResponse(res, false, 'Invalid email or password', {}, 401);
+      await recordAttempt(loginValue, ip, false);
+      return sendJsonResponse(res, false, 'Invalid credentials', {}, 401);
     }
 
-    await recordAttempt(email, ip, true);
+    if (table === 'users' && account.status !== 'Active') {
+      return sendJsonResponse(res, false, 'Your account is inactive. Contact the administrator.', {}, 403);
+    }
 
-    // Generate JWT
+    await recordAttempt(loginValue, ip, true);
+
     const expiryHours = parseInt(process.env.JWT_EXPIRY_HOURS) || 24;
-    const token = jwt.sign(
-      { id: admin.id, name: admin.name, email: admin.email },
-      process.env.JWT_SECRET || 'your_jwt_secret',
-      { expiresIn: `${expiryHours}h` }
-    );
+    const payload = {
+      id: account.id,
+      name: account.name,
+      email: account.email,
+      username: account.username || null,
+      role: table === 'admins' ? 'admin' : 'user',
+      mobile: account.mobile || null,
+      blood_group: account.blood_group || null
+    };
+
+    const token = jwt.sign(payload, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: `${expiryHours}h` });
 
     res.cookie('auth_token', token, {
       httpOnly: true,
@@ -79,11 +95,56 @@ router.post('/login', async (req, res) => {
       maxAge: expiryHours * 60 * 60 * 1000
     });
 
-    return sendJsonResponse(res, true, 'Logged in successfully', {
-      user: { id: admin.id, name: admin.name, email: admin.email }
-    });
+    return sendJsonResponse(res, true, 'Logged in successfully', { user: payload });
   } catch (error) {
     console.error('Login error:', error);
+    return sendJsonResponse(res, false, 'Internal server error', {}, 500);
+  }
+});
+
+// POST /api/auth/signup
+router.post('/signup', async (req, res) => {
+  const name = sanitize(req.body.name || '');
+  const username = sanitize(req.body.username || '');
+  const email = sanitize(req.body.email || '');
+  const mobile = normalizeMobile(sanitize(req.body.mobile || ''));
+  const password = req.body.password || '';
+  const confirmPassword = req.body.confirm_password || '';
+  const blood_group = sanitize(req.body.blood_group || '');
+
+  if (!name || !username || !email || !mobile || !password || !blood_group) {
+    return sendJsonResponse(res, false, 'All required fields are required', {}, 400);
+  }
+
+  if (password.length < 8) {
+    return sendJsonResponse(res, false, 'Password must be at least 8 characters', {}, 400);
+  }
+
+  if (password !== confirmPassword) {
+    return sendJsonResponse(res, false, 'Passwords do not match', {}, 400);
+  }
+
+  if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+    return sendJsonResponse(res, false, 'Username can only contain letters, numbers and underscore', {}, 400);
+  }
+
+  try {
+    const [emailRows] = await pool.execute('SELECT id FROM users WHERE email = ? OR username = ? OR mobile = ?', [email, username, mobile]);
+    if (emailRows.length > 0) {
+      return sendJsonResponse(res, false, 'An account with this email, username or mobile already exists', {}, 409);
+    }
+
+    const hash = await bcrypt.hash(password, 10);
+    const [result] = await pool.execute(
+      'INSERT INTO users (name, username, email, mobile, blood_group, password, role, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [name, username, email, mobile, blood_group, hash, 'user', 'Active']
+    );
+
+    return sendJsonResponse(res, true, 'Account created successfully', {
+      userId: result.insertId
+    }, 201);
+  } catch (error) {
+    console.error('Signup error:', error);
     return sendJsonResponse(res, false, 'Internal server error', {}, 500);
   }
 });

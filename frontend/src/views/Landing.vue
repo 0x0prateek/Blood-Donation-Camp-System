@@ -15,7 +15,7 @@
           <a href="#how-it-works" @click="navOpen = false">How It Works</a>
           <a href="#impact" @click="navOpen = false">Impact</a>
           <a href="#contact" @click="navOpen = false">Contact</a>
-          <router-link to="/login" class="btn btn-nav-login">
+          <router-link to="/admin/login" class="btn btn-nav-login">
             <i class="bi bi-box-arrow-in-right me-1"></i> Admin Login
           </router-link>
         </div>
@@ -40,10 +40,10 @@
               with one platform your organising committee can actually run a camp from.
             </p>
             <div class="d-flex flex-wrap gap-3 mt-4">
-              <a href="#contact" class="btn btn-cta-primary">
+              <router-link to="/donor/register" class="btn btn-cta-primary">
                 <i class="bi bi-droplet-fill me-2"></i> Become a Donor
-              </a>
-              <router-link to="/login" class="btn btn-cta-secondary">
+              </router-link>
+              <router-link to="/admin/login" class="btn btn-cta-secondary">
                 Organiser Login <i class="bi bi-arrow-right ms-1"></i>
               </router-link>
             </div>
@@ -159,10 +159,10 @@
         <h2>Ready to organise your next camp?</h2>
         <p>Sign in to the admin console to manage donors, schedule a camp, or send an emergency alert.</p>
         <div class="d-flex flex-wrap justify-content-center gap-3 mt-4">
-          <button class="btn btn-cta-primary" @click="showDonorInfo">
+          <router-link to="/donor/register" class="btn btn-cta-primary">
             <i class="bi bi-droplet-fill me-2"></i> I want to donate blood
-          </button>
-          <router-link to="/login" class="btn btn-cta-secondary">
+          </router-link>
+          <router-link to="/admin/login" class="btn btn-cta-secondary">
             <i class="bi bi-speedometer2 me-2"></i> Organiser Login
           </router-link>
         </div>
@@ -191,7 +191,9 @@
           <div class="col-md-4">
             <h6>Administration</h6>
             <ul class="footer-links">
-              <li><router-link to="/login">Organiser Login</router-link></li>
+              <li><router-link to="/admin/login">Organiser Login</router-link></li>
+              <li><router-link to="/donor/login">Donor Login</router-link></li>
+              <li><router-link to="/donor/register">Donor Registration</router-link></li>
             </ul>
           </div>
         </div>

@@ -25,12 +25,6 @@ A full-stack Blood Donor Management System (Demo Learning Project for Students) 
 ### Infrastructure
 - Docker / Podman (OCI-compliant)
 - Docker Compose v2
-- MariaDB 10.11
-
----
-
-## 📁 Project Structure
-
 ```
 Blood-Donation-Camp-System/
 ├── backend/          ← Node.js Express API
