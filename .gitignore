@@ -7,6 +7,7 @@ config.local.php
 .env.local
 .env.*.local
 .env.railway
+.env.database
 
 # ── Composer ─────────────────────────────────────────────────
 composer.phar
