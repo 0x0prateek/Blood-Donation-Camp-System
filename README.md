@@ -177,7 +177,39 @@ Railway runs each service as a separate deployment. The quickest path:
 
 ### Railway service setup
 
-Create three Railway services in the same project:
+The repository supports a single-service Railway deployment, matching the
+current `dotlife.up.railway.app` setup, or a separate frontend/backend setup.
+
+### Single-service setup (recommended for this repository)
+
+Create one Railway service from the repository root. The root [Dockerfile](Dockerfile)
+builds the Vue frontend and Node API together. Use these variables:
+
+```env
+VITE_API_BASE=/api
+FRONTEND_URL=https://dotlife.up.railway.app
+DB_HOST=<Railway MySQL host>
+DB_NAME=<Railway MySQL database>
+DB_USER=<Railway MySQL user>
+DB_PASS=<Railway MySQL password>
+JWT_SECRET=<long random secret>
+```
+
+Generate the public domain on the service's **Settings → Networking** page.
+Railway's public networking target may show port `8080`; that is correct. The
+container reads Railway's injected `PORT` automatically. Do not set the public
+domain to port `3000`.
+
+The same domain serves both:
+
+```text
+https://dotlife.up.railway.app/
+https://dotlife.up.railway.app/api/health
+```
+
+### Separate-service setup
+
+If you create separate frontend and backend services, configure them as follows:
 
 1. Add a Railway MySQL plugin.
 2. Create a backend service from the repository root. The root

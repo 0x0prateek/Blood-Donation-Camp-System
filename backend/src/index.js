@@ -1,5 +1,7 @@
 require('dotenv').config();
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 
@@ -47,6 +49,15 @@ app.get('/api/health', (req, res) => {
 app.use('/api', (req, res) => {
   res.status(404).json({ success: false, message: 'Not found' });
 });
+
+// The root Railway image can serve the built SPA and API from one service.
+const frontendDist = path.resolve(__dirname, '../public');
+if (fs.existsSync(frontendDist)) {
+  app.use(express.static(frontendDist));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+}
 
 // Last-resort error handler: never leak stack traces to the client.
 app.use((err, req, res, next) => {
