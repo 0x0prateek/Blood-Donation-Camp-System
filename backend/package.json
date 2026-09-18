@@ -1,5 +1,5 @@
 {
-  "name": "blood-donation-camp-system-backend",
+  "name": "dotlife-backend",
   "version": "1.0.0",
   "description": "Node.js REST API backend for Blood Donation Camp System",
   "main": "src/index.js",
