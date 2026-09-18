@@ -9,6 +9,8 @@ All notable changes to this project will be documented in this file.
   monorepo deployments that use the repository root as the service directory.
 - Frontend Nginx now listens on Railway's injected `PORT` while local Compose
   continues to use port 80.
+- Backend database configuration now accepts Railway MySQL plugin variables
+  (`MYSQLHOST`, `MYSQLPORT`, `MYSQLDATABASE`, `MYSQLUSER`, `MYSQLPASSWORD`).
 - `database/05-demo-portal-data.sql` with 120 donor-portal users and 120
   blood-group requests for repeatable admin workflow testing.
 - Admin blood-request filtering/status management and donor request history.

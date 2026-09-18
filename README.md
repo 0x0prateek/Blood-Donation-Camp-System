@@ -229,10 +229,12 @@ API; the frontend deployment uses `VITE_API_BASE`
 for direct production API calls, while local Docker Compose continues to use
 the internal `/api` Nginx proxy.
 
-For the backend service, set `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`,
-`JWT_SECRET`, and `FRONTEND_URL` in Railway Variables. Map the Railway MySQL
-plugin variables as shown below. Do not deploy the root as a Railpack Node
-application; the committed root Dockerfile is the intended build path.
+For the backend service, set `JWT_SECRET` and `FRONTEND_URL` in Railway
+Variables. The backend now reads Railway's native `MYSQLHOST`, `MYSQLPORT`,
+`MYSQLDATABASE`, `MYSQLUSER`, and `MYSQLPASSWORD` variables automatically. The
+equivalent `DB_*` variables are also supported for Docker Compose.
+Do not deploy the root as a Railpack Node application; the committed root
+Dockerfile is the intended build path.
 
 ### Option A — Railway CLI (recommended)
 
