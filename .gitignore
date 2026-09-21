@@ -1,0 +1,53 @@
+# ── Local configuration ──────────────────────────────────────
+# Production credentials live here and must never be committed.
+config.local.php
+
+# ── Environment files ────────────────────────────────────────
+# .env holds real credentials — git-ignored, use .env.example as template
+.env.local
+.env.*.local
+.env.railway
+.env.database
+
+# ── Composer ─────────────────────────────────────────────────
+composer.phar
+# Backend vendor is rebuilt by Docker — do not commit
+backend/vendor/
+
+# ── Node / Vue Frontend ──────────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# ── Runtime / uploads ────────────────────────────────────────
+# Donor spreadsheets are personal health data.
+uploads/
+storage/
+backend/storage/
+*.log
+
+# ── Database dumps ───────────────────────────────────────────
+# A dump contains personal health records — never commit.
+backups/
+*.sql.gz
+dump*.sql
+backup*.sql
+
+# ── Donor source material ────────────────────────────────────
+blood-doner-details/
+blood-donor-details/
+
+# ── OS / editor noise ────────────────────────────────────────
+Thumbs.db
+desktop.ini
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+backend/node_modules/
+
+# ── Legacy Code Reference ──────────────────────────────────────
+OLD_SYSTEM_PHP/*
+!OLD_SYSTEM_PHP/archive/
+!OLD_SYSTEM_PHP/archive/**

@@ -1,0 +1,99 @@
+version: "3.9"
+
+# ── Blood Donor Management System ─────────────────────────────
+# OCI-compliant (works with docker compose AND podman compose)
+# Dev: docker compose up --build
+# Prod: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+
+  # ── MySQL / MariaDB ──────────────────────────────────────────
+  db:
+    image: mariadb:10.11
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASS:-rootpassword}
+      MARIADB_DATABASE: ${DB_NAME:-blood_donor_system}
+      MARIADB_USER: ${DB_USER:-blooddonor}
+      MARIADB_PASSWORD: ${DB_PASS:-bloodpass}
+    volumes:
+      - db_data:/var/lib/mysql
+      # Run schema on first boot
+      - ./database:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - app-net
+
+  # ── Node.js 20 / Express REST API Backend ─────────────────────
+  # Messaging credentials (WhatsApp/SMS) below are read by the app from
+  # the `settings` DB table via the Settings UI, not from these env vars -
+  # they're kept here only so Railway/prod deployments have a place to
+  # seed them from the platform's variable UI if a future version reads
+  # them directly.
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DB_HOST: db
+      DB_NAME: ${DB_NAME:-blood_donor_system}
+      DB_USER: ${DB_USER:-blooddonor}
+      DB_PASS: ${DB_PASS:-bloodpass}
+      JWT_SECRET: ${JWT_SECRET:-change_me_in_production_to_a_long_random_string}
+      JWT_EXPIRY_HOURS: ${JWT_EXPIRY_HOURS:-2}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Colombo}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+      # Messaging — set in .env (currently only usable via Settings UI, see note above)
+      WHATSAPP_API_TOKEN: ${WHATSAPP_API_TOKEN:-}
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
+      WHATSAPP_API_VERSION: ${WHATSAPP_API_VERSION:-v23.0}
+      SMS_GATEWAY: ${SMS_GATEWAY:-notify}
+      SMS_API_KEY: ${SMS_API_KEY:-}
+      SMS_API_SECRET: ${SMS_API_SECRET:-}
+      SMS_SENDER_ID: ${SMS_SENDER_ID:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8081:80"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:80/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - app-net
+
+  # ── Vue 3 SPA Frontend ───────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE: /api
+    environment:
+      PORT: 80
+      BACKEND_HOST: backend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - app-net
+
+volumes:
+  db_data:
+
+networks:
+  app-net:
+    driver: bridge
